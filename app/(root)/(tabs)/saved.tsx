@@ -15,43 +15,7 @@ import PropertyCard from "../../../components/PropertyCard";
 import { useSupabase } from "../../../hooks/useSupabase";
 import { Property, SavedProperty } from "../../../types";
 
-const SEED_SAVED_PROPERTIES: Property[] = [
-  {
-    id: "prop_1",
-    title: "Modern Luxury Villa with Pool",
-    type: "villa",
-    price: 25000000,
-    bedrooms: 4,
-    bathrooms: 4,
-    area_sqft: 3200,
-    address: "Banjara Hills",
-    city: "Hyderabad",
-    is_featured: true,
-    is_sold: false,
-    images: [
-      "https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800",
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800",
-    ],
-  },
-  {
-    id: "prop_2",
-    title: "Sea Facing Luxury Apartment",
-    type: "apartment",
-    price: 18500000,
-    bedrooms: 3,
-    bathrooms: 3,
-    area_sqft: 2100,
-    address: "Bandra West",
-    city: "Mumbai",
-    is_featured: true,
-    is_sold: false,
-    images: [
-      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800",
-      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800",
-    ],
-  },
-];
-
+import { SEED_PROPERTIES } from "../../../constants/data";
 import { useTheme } from "../../../context/ThemeContext";
 
 export default function SavedScreen() {
@@ -67,7 +31,8 @@ export default function SavedScreen() {
     setLoading(true);
     try {
       if (!user) {
-        const fallback = SEED_SAVED_PROPERTIES.map((p) => ({
+        // Fallback for unauthenticated state
+        const fallback = SEED_PROPERTIES.slice(0, 2).map((p) => ({
           id: `saved_${p.id}`,
           property_id: p.id,
           properties: p,
@@ -84,7 +49,16 @@ export default function SavedScreen() {
         .order("id", { ascending: false });
 
       if (res && res.data) {
-        const validSaved = res.data.filter((item: any) => item.properties !== null);
+        const validSaved = res.data.map((item: any) => {
+          if (item.properties !== null) return item;
+          // If the property doesn't exist in Supabase DB but is a seeded item
+          const seeded = SEED_PROPERTIES.find(p => p.id === item.property_id);
+          if (seeded) {
+            return { ...item, properties: seeded };
+          }
+          return null;
+        }).filter((item: any) => item !== null);
+        
         setSaved(validSaved as unknown as SavedProperty[]);
       } else {
         setSaved([]);
