@@ -119,10 +119,13 @@ const SEED_PROPERTIES: Property[] = [
   },
 ];
 
+import { useTheme } from "../../../context/ThemeContext";
+
 export default function HomeScreen() {
   const { user } = useUser();
   const router = useRouter();
   const supabase = useSupabase();
+  const { theme } = useTheme();
 
   const [featured, setFeatured] = useState<Property[]>([]);
   const [recommended, setRecommended] = useState<Property[]>([]);
@@ -173,11 +176,11 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
       <FlatList
         data={recommended}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
@@ -185,7 +188,7 @@ export default function HomeScreen() {
             <View className="flex-row items-center justify-between px-5 pt-4 pb-5">
               <Image
                 source={require("../../../assets/images/kribb.png")}
-                style={{ width: 100, height: 40 }}
+                style={{ width: 100, height: 40, tintColor: theme.mode === 'dark' ? '#FFF' : undefined }}
                 resizeMode="contain"
               />
               <TouchableOpacity
@@ -201,12 +204,12 @@ export default function HomeScreen() {
                   width: 38,
                   height: 38,
                   borderRadius: 19,
-                  backgroundColor: "#F3F4F6",
+                  backgroundColor: theme.card,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Ionicons name="notifications-outline" size={20} color="#374151" />
+                <Ionicons name="notifications-outline" size={20} color={theme.text} />
                 <View
                   style={{
                     position: "absolute",
@@ -215,7 +218,7 @@ export default function HomeScreen() {
                     width: 7,
                     height: 7,
                     borderRadius: 3.5,
-                    backgroundColor: "#2563EB",
+                    backgroundColor: theme.accent,
                   }}
                 />
               </TouchableOpacity>
@@ -224,21 +227,23 @@ export default function HomeScreen() {
             {/* Search Bar */}
             <TouchableOpacity
               onPress={() => router.push("/(root)/(tabs)/search")}
-              className="mx-5 mb-6 flex-row items-center bg-white rounded-2xl px-4 py-3 gap-3 border border-gray-100"
+              className="mx-5 mb-6 flex-row items-center rounded-2xl px-4 py-3 gap-3 border"
               style={{
+                backgroundColor: theme.inputBg,
+                borderColor: theme.inputBorder,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.06,
+                shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.06,
                 shadowRadius: 6,
                 elevation: 2,
               }}
             >
-              <Ionicons name="search-outline" size={18} color="#9CA3AF" />
-              <Text className="text-gray-400 text-sm flex-1">
+              <Ionicons name="search-outline" size={18} color={theme.textMuted} />
+              <Text style={{ color: theme.textMuted, fontSize: 14, flex: 1 }}>
                 Search properties, cities...
               </Text>
-              <View className="w-8 h-8 bg-blue-600 rounded-xl items-center justify-center">
-                <Ionicons name="options-outline" size={15} color="white" />
+              <View style={{ width: 32, height: 32, backgroundColor: theme.accent, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="options-outline" size={15} color="#FFFFFF" />
               </View>
             </TouchableOpacity>
 
@@ -248,7 +253,7 @@ export default function HomeScreen() {
                 {/* Featured Section */}
                 {featured.length > 0 && (
                   <View className="mb-6">
-                    <Text className="text-gray-900 text-lg font-semibold px-5 mb-4">
+                    <Text style={{ color: theme.text, fontSize: 18, fontWeight: '600', paddingHorizontal: 20, marginBottom: 16 }}>
                       Featured
                     </Text>
                     <FlatList
@@ -266,7 +271,7 @@ export default function HomeScreen() {
                 )}
 
                 {/* Recommended Header */}
-                <Text className="text-gray-900 text-lg font-semibold px-5 mb-4">
+                <Text style={{ color: theme.text, fontSize: 18, fontWeight: '600', paddingHorizontal: 20, marginBottom: 16 }}>
                   Recommended
                 </Text>
               </>
@@ -281,11 +286,11 @@ export default function HomeScreen() {
         ListEmptyComponent={
           loading ? (
             <View className="flex-1 items-center justify-center py-24">
-              <CustomSpinner size={44} color="#64748b" />
+              <CustomSpinner size={44} color={theme.textMuted} />
             </View>
           ) : (
             <View className="items-center py-10">
-              <Text className="text-gray-400 font-semibold">No properties found</Text>
+              <Text style={{ color: theme.textMuted, fontWeight: '600' }}>No properties found</Text>
             </View>
           )
         }

@@ -14,12 +14,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomSpinner from "../../../components/CustomSpinner";
+import { useTheme } from "../../../context/ThemeContext";
 
 export default function ProfileScreen() {
   const { user, isLoaded } = useUser();
   const { signOut } = useAuth();
   const router = useRouter();
   const [isUpdating, setIsUpdating] = useState(false);
+  const { theme } = useTheme();
 
   const handleSignOut = async () => {
     try {
@@ -99,14 +101,14 @@ export default function ProfileScreen() {
 
   if (!isLoaded || !user) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <CustomSpinner size={40} color="#64748b" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <CustomSpinner size={40} color={theme.textMuted} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white mb-10">
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg, paddingBottom: 80 }}>
       {/* Avatar + Name */}
       <View className="items-center py-8">
         <View className="relative mb-4">
@@ -117,7 +119,8 @@ export default function ProfileScreen() {
           <TouchableOpacity
             onPress={handleUpdateProfileImage}
             disabled={isUpdating}
-            className="absolute bottom-1 right-0 bg-blue-600 rounded-full p-2"
+            style={{ backgroundColor: theme.accent }}
+            className="absolute bottom-1 right-0 rounded-full p-2"
           >
             {isUpdating ? (
               <CustomSpinner size={16} color="white" />
@@ -126,10 +129,10 @@ export default function ProfileScreen() {
             )}
           </TouchableOpacity>
         </View>
-        <Text className="text-xl font-semibold text-gray-900">
+        <Text style={{ color: theme.text }} className="text-xl font-semibold">
           {user.firstName} {user.lastName}
         </Text>
-        <Text className="text-gray-500 mt-1">
+        <Text style={{ color: theme.textSecondary }} className="mt-1">
           {user.emailAddresses?.[0]?.emailAddress}
         </Text>
       </View>
@@ -140,16 +143,19 @@ export default function ProfileScreen() {
           icon="heart-outline"
           label="Saved Properties"
           onPress={() => router.push("/(root)/(tabs)/saved")}
+          theme={theme}
         />
         <MenuItem
           icon="notifications-outline"
           label="Notifications"
           onPress={() => router.push("/(root)/notification")}
+          theme={theme}
         />
         <MenuItem
           icon="settings-outline"
           label="Settings"
           onPress={() => router.push("/(root)/(tabs)/setting")}
+          theme={theme}
         />
         <MenuItem
           icon="help-circle-outline"
@@ -159,6 +165,7 @@ export default function ProfileScreen() {
               "mailto:piyushagarwalvo@gmail.com?subject=Help%20%26%20Support%20-%20Kribb%20App"
             )
           }
+          theme={theme}
         />
       </View>
 
@@ -166,7 +173,8 @@ export default function ProfileScreen() {
       <View className="px-6 mt-auto mb-8">
         <TouchableOpacity
           onPress={handleSignOut}
-          className="flex-row items-center justify-center gap-2 bg-red-50 py-4 rounded-2xl border border-red-100"
+          style={{ backgroundColor: theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2', borderColor: theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2' }}
+          className="flex-row items-center justify-center gap-2 py-4 rounded-2xl border"
         >
           <Ionicons name="log-out-outline" size={20} color="#EF4444" />
           <Text className="text-red-500 font-semibold text-base">Sign Out</Text>
@@ -180,21 +188,24 @@ function MenuItem({
   icon,
   label,
   onPress,
+  theme,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress?: () => void;
+  theme: any;
 }) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="flex-row items-center gap-4 bg-gray-50 px-4 py-4 rounded-2xl mb-2"
+      style={{ backgroundColor: theme.card }}
+      className="flex-row items-center gap-4 px-4 py-4 rounded-2xl mb-2"
     >
-      <Ionicons name={icon} size={22} color="#6B7280" />
-      <Text className="flex-1 text-gray-700 font-medium text-base">
+      <Ionicons name={icon} size={22} color={theme.textSecondary} />
+      <Text style={{ color: theme.text }} className="flex-1 font-medium text-base">
         {label}
       </Text>
-      <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+      <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
     </TouchableOpacity>
   );
 }

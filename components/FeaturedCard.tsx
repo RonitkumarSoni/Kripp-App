@@ -3,9 +3,11 @@ import { Image, Text, TouchableOpacity, View, FlatList, Dimensions } from "react
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSavedProperty } from "../hooks/useSavedProperty";
+import { useTheme } from "../context/ThemeContext";
 
 export default function FeaturedCard({ property }: { property: any }) {
   const router = useRouter();
+  const { theme } = useTheme();
   const { isSaved, saveLoading, toggleSave } = useSavedProperty(property.id);
 
   const formatPrice = (price: number) => {
@@ -21,8 +23,10 @@ export default function FeaturedCard({ property }: { property: any }) {
   return (
     <TouchableOpacity
       onPress={() => router.push(`/(root)/property/${property.id}`)}
-      className="w-72 mr-4 rounded-3xl overflow-hidden bg-white border border-gray-100 shadow-sm relative"
+      className="w-72 mr-4 rounded-3xl overflow-hidden border shadow-sm relative"
       style={{
+        backgroundColor: theme.card,
+        borderColor: theme.cardBorder,
         opacity: property.is_sold ? 0.5 : 1,
       }}
     >
@@ -52,7 +56,7 @@ export default function FeaturedCard({ property }: { property: any }) {
         />
       )}
 
-      <View className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full z-10">
+      <View className="absolute top-3 left-3 px-3 py-1 rounded-full z-10" style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}>
         <Text className="text-xs font-semibold text-gray-800 capitalize">
           {property.type || "Villa"}
         </Text>
@@ -65,7 +69,7 @@ export default function FeaturedCard({ property }: { property: any }) {
           position: "absolute",
           top: 12,
           right: 12,
-          backgroundColor: "rgba(255, 255, 255, 0.9)",
+          backgroundColor: theme.card,
           borderRadius: 20,
           width: 32,
           height: 32,
@@ -75,42 +79,42 @@ export default function FeaturedCard({ property }: { property: any }) {
           elevation: 4,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
+          shadowOpacity: theme.mode === 'dark' ? 0.3 : 0.1,
           shadowRadius: 4,
         }}
       >
         <Ionicons
           name={isSaved ? "heart" : "heart-outline"}
           size={18}
-          color={isSaved ? "#EF4444" : "#4B5563"}
+          color={isSaved ? "#EF4444" : theme.textSecondary}
         />
       </TouchableOpacity>
 
       <View className="p-4">
-        <Text className="text-gray-900 font-semibold text-base mb-1" numberOfLines={1}>
+        <Text style={{ color: theme.text }} className="font-semibold text-base mb-1" numberOfLines={1}>
           {property.title}
         </Text>
         
         <View className="flex-row items-center mb-2">
-          <Ionicons name="location-outline" size={14} color="#6b7280" />
-          <Text className="text-gray-500 text-xs ml-1" numberOfLines={1}>
+          <Ionicons name="location-outline" size={14} color={theme.textSecondary} />
+          <Text style={{ color: theme.textSecondary }} className="text-xs ml-1" numberOfLines={1}>
             {property.city || property.address}
           </Text>
         </View>
 
-        <View className="flex-row items-center justify-between pt-2 border-t border-gray-100">
-          <Text className="text-blue-600 font-bold text-base">
+        <View className="flex-row items-center justify-between pt-2 border-t" style={{ borderColor: theme.cardBorder }}>
+          <Text style={{ color: theme.accent }} className="font-bold text-base">
             {formatPrice(property.price)}
           </Text>
           <View className="flex-row items-center space-x-3">
             <View className="flex-row items-center">
-              <Ionicons name="bed-outline" size={12} color="#6b7280" />
-              <Text className="text-gray-600 text-xs ml-1">{property.bedrooms || 1} bd</Text>
+              <Ionicons name="bed-outline" size={12} color={theme.textSecondary} />
+              <Text style={{ color: theme.textSecondary }} className="text-xs ml-1">{property.bedrooms || 1} bd</Text>
             </View>
             {property.area_sqft && (
               <View className="flex-row items-center ml-2">
-                <Ionicons name="expand-outline" size={12} color="#6b7280" />
-                <Text className="text-gray-600 text-xs ml-1">{property.area_sqft} ft²</Text>
+                <Ionicons name="expand-outline" size={12} color={theme.textSecondary} />
+                <Text style={{ color: theme.textSecondary }} className="text-xs ml-1">{property.area_sqft} ft²</Text>
               </View>
             )}
           </View>

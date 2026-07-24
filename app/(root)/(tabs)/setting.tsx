@@ -10,18 +10,17 @@ import {
   ScrollView,
   Switch,
   Alert,
-  Platform,
 } from "react-native";
 import CustomSpinner from "../../../components/CustomSpinner";
+import { useTheme } from "../../../context/ThemeContext";
 
 export default function SettingsScreen() {
   const { user, isLoaded } = useUser();
   const { signOut } = useAuth();
   const router = useRouter();
+  const { theme, isDark, toggleTheme } = useTheme();
 
-  // Mock settings states
   const [pushEnabled, setPushEnabled] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [emailUpdates, setEmailUpdates] = useState(true);
 
   const handleSignOut = async () => {
@@ -39,14 +38,14 @@ export default function SettingsScreen() {
 
   if (!isLoaded || !user) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center" }}>
-        <CustomSpinner size={40} color="#64748b" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg, alignItems: "center", justifyContent: "center" }}>
+        <CustomSpinner size={40} color={theme.textMuted} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
       {/* Header */}
       <View
         style={{
@@ -55,9 +54,9 @@ export default function SettingsScreen() {
           gap: 12,
           paddingHorizontal: 20,
           paddingVertical: 16,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: theme.card,
           borderBottomWidth: 1,
-          borderBottomColor: "#F3F4F6",
+          borderBottomColor: theme.cardBorder,
         }}
       >
         <TouchableOpacity
@@ -66,30 +65,30 @@ export default function SettingsScreen() {
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: "#F3F4F6",
+            backgroundColor: theme.sectionBg,
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Ionicons name="arrow-back" size={20} color="#374151" />
+          <Ionicons name="arrow-back" size={20} color={theme.text} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: "700", color: "#111827" }}>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: theme.text }}>
           Settings
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 20 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 100 }}>
         {/* Profile Snapshot */}
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: theme.card,
             borderRadius: 20,
             padding: 16,
             flexDirection: "row",
             alignItems: "center",
             gap: 16,
             borderWidth: 1,
-            borderColor: "#E5E7EB",
+            borderColor: theme.cardBorder,
           }}
         >
           <View
@@ -97,7 +96,7 @@ export default function SettingsScreen() {
               width: 50,
               height: 50,
               borderRadius: 25,
-              backgroundColor: "#2563EB",
+              backgroundColor: theme.accent,
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -107,10 +106,10 @@ export default function SettingsScreen() {
             </Text>
           </View>
           <View>
-            <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827" }}>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: theme.text }}>
               {user.firstName} {user.lastName}
             </Text>
-            <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>
+            <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
               {user.emailAddresses?.[0]?.emailAddress}
             </Text>
           </View>
@@ -118,15 +117,15 @@ export default function SettingsScreen() {
 
         {/* Section 1: App Preferences */}
         <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 13, fontWeight: "600", color: "#6B7280", marginLeft: 4 }}>
+          <Text style={{ fontSize: 13, fontWeight: "600", color: theme.textSecondary, marginLeft: 4 }}>
             PREFERENCES
           </Text>
           <View
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: theme.card,
               borderRadius: 20,
               borderWidth: 1,
-              borderColor: "#E5E7EB",
+              borderColor: theme.cardBorder,
               overflow: "hidden",
             }}
           >
@@ -135,38 +134,38 @@ export default function SettingsScreen() {
               label="Push Notifications"
               value={pushEnabled}
               onValueChange={setPushEnabled}
+              theme={theme}
             />
-            <View style={{ height: 1, backgroundColor: "#F3F4F6", marginLeft: 16 }} />
+            <View style={{ height: 1, backgroundColor: theme.cardBorder, marginLeft: 16 }} />
             <SettingToggle
               icon="mail"
               label="Email Updates"
               value={emailUpdates}
               onValueChange={setEmailUpdates}
+              theme={theme}
             />
-            <View style={{ height: 1, backgroundColor: "#F3F4F6", marginLeft: 16 }} />
+            <View style={{ height: 1, backgroundColor: theme.cardBorder, marginLeft: 16 }} />
             <SettingToggle
               icon="moon"
               label="Dark Mode"
-              value={darkMode}
-              onValueChange={(val) => {
-                setDarkMode(val);
-                handleUnderConstruction("Dark Mode");
-              }}
+              value={isDark}
+              onValueChange={toggleTheme}
+              theme={theme}
             />
           </View>
         </View>
 
         {/* Section 2: Security & Privacy */}
         <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 13, fontWeight: "600", color: "#6B7280", marginLeft: 4 }}>
+          <Text style={{ fontSize: 13, fontWeight: "600", color: theme.textSecondary, marginLeft: 4 }}>
             SECURITY & PRIVACY
           </Text>
           <View
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: theme.card,
               borderRadius: 20,
               borderWidth: 1,
-              borderColor: "#E5E7EB",
+              borderColor: theme.cardBorder,
               overflow: "hidden",
             }}
           >
@@ -174,27 +173,29 @@ export default function SettingsScreen() {
               icon="lock-closed"
               label="Change Password"
               onPress={() => handleUnderConstruction("Password Management")}
+              theme={theme}
             />
-            <View style={{ height: 1, backgroundColor: "#F3F4F6", marginLeft: 16 }} />
+            <View style={{ height: 1, backgroundColor: theme.cardBorder, marginLeft: 16 }} />
             <SettingItem
               icon="shield-checkmark"
               label="Privacy Settings"
               onPress={() => handleUnderConstruction("Privacy Control")}
+              theme={theme}
             />
           </View>
         </View>
 
         {/* Section 3: About */}
         <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 13, fontWeight: "600", color: "#6B7280", marginLeft: 4 }}>
+          <Text style={{ fontSize: 13, fontWeight: "600", color: theme.textSecondary, marginLeft: 4 }}>
             ABOUT
           </Text>
           <View
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: theme.card,
               borderRadius: 20,
               borderWidth: 1,
-              borderColor: "#E5E7EB",
+              borderColor: theme.cardBorder,
               overflow: "hidden",
             }}
           >
@@ -202,14 +203,16 @@ export default function SettingsScreen() {
               icon="document-text"
               label="Terms of Service"
               onPress={() => Alert.alert("Terms of Service", "TOS details go here.")}
+              theme={theme}
             />
-            <View style={{ height: 1, backgroundColor: "#F3F4F6", marginLeft: 16 }} />
+            <View style={{ height: 1, backgroundColor: theme.cardBorder, marginLeft: 16 }} />
             <SettingItem
               icon="key"
               label="Privacy Policy"
               onPress={() => Alert.alert("Privacy Policy", "Privacy policy details go here.")}
+              theme={theme}
             />
-            <View style={{ height: 1, backgroundColor: "#F3F4F6", marginLeft: 16 }} />
+            <View style={{ height: 1, backgroundColor: theme.cardBorder, marginLeft: 16 }} />
             <View
               style={{
                 flexDirection: "row",
@@ -219,12 +222,12 @@ export default function SettingsScreen() {
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <Ionicons name="information-circle" size={20} color="#6B7280" />
-                <Text style={{ fontSize: 14, fontWeight: "500", color: "#374151" }}>
+                <Ionicons name="information-circle" size={20} color={theme.textSecondary} />
+                <Text style={{ fontSize: 14, fontWeight: "500", color: theme.text }}>
                   App Version
                 </Text>
               </View>
-              <Text style={{ fontSize: 14, color: "#9CA3AF" }}>v1.0.0</Text>
+              <Text style={{ fontSize: 14, color: theme.textMuted }}>v1.0.0</Text>
             </View>
           </View>
         </View>
@@ -237,9 +240,9 @@ export default function SettingsScreen() {
             alignItems: "center",
             justifyContent: "center",
             gap: 8,
-            backgroundColor: "#FEF2F2",
+            backgroundColor: theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2',
             borderWidth: 1,
-            borderColor: "#FEE2E2",
+            borderColor: theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
             borderRadius: 20,
             paddingVertical: 14,
             marginTop: 10,
@@ -259,10 +262,12 @@ function SettingItem({
   icon,
   label,
   onPress,
+  theme,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
+  theme: any;
 }) {
   return (
     <TouchableOpacity
@@ -275,12 +280,12 @@ function SettingItem({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <Ionicons name={icon} size={20} color="#4B5563" />
-        <Text style={{ fontSize: 14, fontWeight: "500", color: "#374151" }}>
+        <Ionicons name={icon} size={20} color={theme.textSecondary} />
+        <Text style={{ fontSize: 14, fontWeight: "500", color: theme.text }}>
           {label}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+      <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
     </TouchableOpacity>
   );
 }
@@ -290,11 +295,13 @@ function SettingToggle({
   label,
   value,
   onValueChange,
+  theme,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: boolean;
   onValueChange: (val: boolean) => void;
+  theme: any;
 }) {
   return (
     <View
@@ -307,16 +314,16 @@ function SettingToggle({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <Ionicons name={icon} size={20} color="#4B5563" />
-        <Text style={{ fontSize: 14, fontWeight: "500", color: "#374151" }}>
+        <Ionicons name={icon} size={20} color={theme.textSecondary} />
+        <Text style={{ fontSize: 14, fontWeight: "500", color: theme.text }}>
           {label}
         </Text>
       </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: "#E5E7EB", true: "#93C5FD" }}
-        thumbColor={value ? "#2563EB" : "#F3F4F6"}
+        trackColor={{ false: theme.cardBorder, true: theme.accentLight }}
+        thumbColor={value ? theme.accent : theme.textMuted}
       />
     </View>
   );

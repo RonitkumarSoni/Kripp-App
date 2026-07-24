@@ -3,15 +3,18 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { View, Text, Platform } from "react-native";
 import { BlurView } from "expo-blur";
+import { useTheme } from "../../../context/ThemeContext";
 
 const TabItem = ({
   name,
   label,
   focused,
+  theme,
 }: {
   name: string;
   label: string;
   focused: boolean;
+  theme: any;
 }) => {
   const iconName = focused ? name : `${name}-outline`;
 
@@ -37,7 +40,7 @@ const TabItem = ({
         style={{
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: focused ? "rgba(219, 234, 254, 0.5)" : "transparent",
+          backgroundColor: focused ? theme.accentLight : "transparent",
           borderRadius: 20,
           paddingHorizontal: focused ? 14 : 8,
           paddingVertical: 4,
@@ -47,11 +50,11 @@ const TabItem = ({
         <Ionicons
           name={iconName as any}
           size={20}
-          color={focused ? "#2563EB" : "#9CA3AF"}
+          color={focused ? theme.accent : theme.textMuted}
         />
         <Text
           style={{
-            color: focused ? "#2563EB" : "#9CA3AF",
+            color: focused ? theme.accent : theme.textMuted,
             fontSize: 9,
             fontWeight: focused ? "700" : "500",
             marginTop: 2,
@@ -66,6 +69,8 @@ const TabItem = ({
 };
 
 export default function TabLayout() {
+  const { theme, isDark } = useTheme();
+  
   return (
     <Tabs
       screenOptions={{
@@ -78,16 +83,16 @@ export default function TabLayout() {
               borderRadius: 30,
               overflow: "hidden",
               borderWidth: 0.5,
-              borderColor: "rgba(255,255,255,0.3)",
+              borderColor: theme.tabBarBorder,
             }}
           >
             <BlurView
-              tint="light"
+              tint={isDark ? "dark" : "light"}
               intensity={85}
               style={{
                 flex: 1,
                 backgroundColor: Platform.OS === "web"
-                  ? "rgba(255, 255, 255, 0.75)"
+                  ? theme.tabBarBg
                   : "transparent",
               }}
             />
@@ -101,7 +106,7 @@ export default function TabLayout() {
           elevation: 12,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.08,
+          shadowOpacity: isDark ? 0.3 : 0.08,
           shadowRadius: 14,
           borderTopWidth: 0,
           backgroundColor: "transparent",
@@ -125,7 +130,7 @@ export default function TabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ focused }) => (
-            <TabItem name="home" label="Home" focused={focused} />
+            <TabItem name="home" label="Home" focused={focused} theme={theme} />
           ),
         }}
       />
@@ -134,7 +139,7 @@ export default function TabLayout() {
         options={{
           title: "Search",
           tabBarIcon: ({ focused }) => (
-            <TabItem name="search" label="Search" focused={focused} />
+            <TabItem name="search" label="Search" focused={focused} theme={theme} />
           ),
         }}
       />
@@ -143,7 +148,7 @@ export default function TabLayout() {
         options={{
           title: "Create",
           tabBarIcon: ({ focused }) => (
-            <TabItem name="add-circle" label="Create" focused={focused} />
+            <TabItem name="add-circle" label="Create" focused={focused} theme={theme} />
           ),
         }}
       />
@@ -152,7 +157,7 @@ export default function TabLayout() {
         options={{
           title: "Saved",
           tabBarIcon: ({ focused }) => (
-            <TabItem name="heart" label="Saved" focused={focused} />
+            <TabItem name="heart" label="Saved" focused={focused} theme={theme} />
           ),
         }}
       />
@@ -161,7 +166,7 @@ export default function TabLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ focused }) => (
-            <TabItem name="person" label="Profile" focused={focused} />
+            <TabItem name="person" label="Profile" focused={focused} theme={theme} />
           ),
         }}
       />

@@ -2,6 +2,7 @@ import React from "react";
 import { Modal, Text, TouchableOpacity, View, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFilterStore } from "../store/filterStore";
+import { useTheme } from "../context/ThemeContext";
 
 interface FilterModalProps {
   visible: boolean;
@@ -19,6 +20,8 @@ export default function FilterModal({ visible, onClose }: FilterModalProps) {
     setBedrooms,
     resetFilters,
   } = useFilterStore();
+  
+  const { theme } = useTheme();
 
   return (
     <Modal
@@ -28,19 +31,19 @@ export default function FilterModal({ visible, onClose }: FilterModalProps) {
       onRequestClose={onClose}
     >
       <View className="flex-1 bg-black/50 justify-end">
-        <View className="bg-white rounded-t-3xl p-6 max-h-[80%]">
+        <View style={{ backgroundColor: theme.card }} className="rounded-t-3xl p-6 max-h-[80%]">
           {/* Header */}
-          <View className="flex-row items-center justify-between pb-4 border-b border-gray-100 mb-5">
-            <Text className="text-xl font-semibold text-gray-900">Filters</Text>
+          <View style={{ borderBottomColor: theme.cardBorder }} className="flex-row items-center justify-between pb-4 border-b mb-5">
+            <Text style={{ color: theme.text }} className="text-xl font-semibold">Filters</Text>
             <TouchableOpacity onPress={onClose} className="p-1">
-              <Ionicons name="close" size={24} color="#374151" />
+              <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Property Type */}
             <View className="mb-6">
-              <Text className="text-sm font-semibold text-gray-700 mb-3">
+              <Text style={{ color: theme.textSecondary }} className="text-sm font-semibold mb-3">
                 Property Type
               </Text>
               <View className="flex-row flex-wrap gap-2">
@@ -48,16 +51,15 @@ export default function FilterModal({ visible, onClose }: FilterModalProps) {
                   <TouchableOpacity
                     key={t}
                     onPress={() => setType(type === t ? null : t)}
-                    className={`px-4 py-2 rounded-full border ${
-                      type === t
-                        ? "bg-blue-600 border-blue-600"
-                        : "bg-white border-gray-200"
-                    }`}
+                    style={{
+                      backgroundColor: type === t ? theme.accent : theme.inputBg,
+                      borderColor: type === t ? theme.accent : theme.inputBorder
+                    }}
+                    className="px-4 py-2 rounded-full border"
                   >
                     <Text
-                      className={`text-sm font-semibold capitalize ${
-                        type === t ? "text-white" : "text-gray-600"
-                      }`}
+                      className="text-sm font-semibold capitalize"
+                      style={{ color: type === t ? "#FFF" : theme.textSecondary }}
                     >
                       {t}
                     </Text>
@@ -68,7 +70,7 @@ export default function FilterModal({ visible, onClose }: FilterModalProps) {
 
             {/* Bedrooms */}
             <View className="mb-6">
-              <Text className="text-sm font-semibold text-gray-700 mb-3">
+              <Text style={{ color: theme.textSecondary }} className="text-sm font-semibold mb-3">
                 Bedrooms
               </Text>
               <View className="flex-row gap-3">
@@ -76,16 +78,15 @@ export default function FilterModal({ visible, onClose }: FilterModalProps) {
                   <TouchableOpacity
                     key={b}
                     onPress={() => setBedrooms(bedrooms === b ? null : b)}
-                    className={`flex-1 py-3 rounded-2xl border items-center ${
-                      bedrooms === b
-                        ? "bg-blue-600 border-blue-600"
-                        : "bg-white border-gray-200"
-                    }`}
+                    style={{
+                      backgroundColor: bedrooms === b ? theme.accent : theme.inputBg,
+                      borderColor: bedrooms === b ? theme.accent : theme.inputBorder
+                    }}
+                    className="flex-1 py-3 rounded-2xl border items-center"
                   >
                     <Text
-                      className={`text-sm font-semibold ${
-                        bedrooms === b ? "text-white" : "text-gray-700"
-                      }`}
+                      className="text-sm font-semibold"
+                      style={{ color: bedrooms === b ? "#FFF" : theme.textSecondary }}
                     >
                       {b === 4 ? "4+" : b}
                     </Text>
@@ -96,16 +97,18 @@ export default function FilterModal({ visible, onClose }: FilterModalProps) {
           </ScrollView>
 
           {/* Action Buttons */}
-          <View className="flex-row gap-3 pt-4 border-t border-gray-100 mt-2">
+          <View style={{ borderTopColor: theme.cardBorder }} className="flex-row gap-3 pt-4 border-t mt-2">
             <TouchableOpacity
               onPress={resetFilters}
-              className="flex-1 py-3.5 rounded-2xl border border-gray-200 items-center"
+              style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder }}
+              className="flex-1 py-3.5 rounded-2xl border items-center"
             >
-              <Text className="text-gray-700 font-semibold">Reset</Text>
+              <Text style={{ color: theme.text }} className="font-semibold">Reset</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={onClose}
-              className="flex-1 py-3.5 rounded-2xl bg-blue-600 items-center"
+              style={{ backgroundColor: theme.accent }}
+              className="flex-1 py-3.5 rounded-2xl items-center"
             >
               <Text className="text-white font-semibold">Apply Filters</Text>
             </TouchableOpacity>

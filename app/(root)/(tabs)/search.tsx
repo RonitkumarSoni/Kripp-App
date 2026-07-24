@@ -142,12 +142,15 @@ const filterSeedProperties = (
   });
 };
 
+import { useTheme } from "../../../context/ThemeContext";
+
 export default function SearchScreen() {
   const [results, setResults] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
   const supabase = useSupabase();
+  const { theme } = useTheme();
   const { openFilters } = useLocalSearchParams<{ openFilters?: string }>();
 
   useEffect(() => {
@@ -236,37 +239,40 @@ export default function SearchScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
       {/* Header */}
       <View className="px-5 pt-4 pb-3">
-        <Text className="text-2xl font-semibold text-gray-900 mb-4">
+        <Text style={{ fontSize: 24, fontWeight: "600", color: theme.text, marginBottom: 16 }}>
           Find Property
         </Text>
 
         {/* Search Bar + Filter Button */}
         <View className="flex-row items-center gap-3">
           <View
-            className="flex-1 flex-row items-center bg-white rounded-2xl px-4 gap-3 border border-gray-100"
+            className="flex-1 flex-row items-center rounded-2xl px-4 gap-3 border"
             style={{
+              backgroundColor: theme.inputBg,
+              borderColor: theme.inputBorder,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.06,
+              shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.06,
               shadowRadius: 6,
               elevation: 2,
             }}
           >
-            <Ionicons name="search-outline" size={18} color="#9CA3AF" />
+            <Ionicons name="search-outline" size={18} color={theme.textMuted} />
             <TextInput
-              className="flex-1 py-3 text-gray-800 focus:outline-none text-sm"
+              className="flex-1 py-3 focus:outline-none text-sm"
+              style={{ color: theme.text }}
               placeholder="Search by title or city..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.textMuted}
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search.length > 0 && (
               <TouchableOpacity onPress={() => setSearch("")}>
-                <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                <Ionicons name="close-circle" size={18} color={theme.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -274,13 +280,13 @@ export default function SearchScreen() {
           {/* Filter Button */}
           <TouchableOpacity
             onPress={() => setShowFilters(true)}
-            className={`w-12 h-12 rounded-2xl items-center justify-center border border-gray-100 ${
-              activeFilterCount > 0 ? "bg-blue-600" : "bg-white"
-            }`}
+            className="w-12 h-12 rounded-2xl items-center justify-center border"
             style={{
+              backgroundColor: activeFilterCount > 0 ? theme.accent : theme.inputBg,
+              borderColor: activeFilterCount > 0 ? theme.accent : theme.inputBorder,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.06,
+              shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.06,
               shadowRadius: 6,
               elevation: 2,
             }}
@@ -288,7 +294,7 @@ export default function SearchScreen() {
             <Ionicons
               name="options-outline"
               size={20}
-              color={activeFilterCount > 0 ? "#fff" : "#374151"}
+              color={activeFilterCount > 0 ? "#fff" : theme.text}
             />
             {activeFilterCount > 0 && (
               <View className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full items-center justify-center">
@@ -304,31 +310,31 @@ export default function SearchScreen() {
         {activeFilterCount > 0 && (
           <View className="flex-row flex-wrap gap-2 mt-3">
             {type && (
-              <View className="flex-row items-center bg-blue-50 border border-blue-200 rounded-full px-3 py-1 gap-1">
-                <Text className="text-blue-700 text-xs font-semibold capitalize">
+              <View style={{ backgroundColor: theme.accentLight, borderColor: theme.accent, borderWidth: 1 }} className="flex-row items-center rounded-full px-3 py-1 gap-1">
+                <Text style={{ color: theme.accent }} className="text-xs font-semibold capitalize">
                   {type}
                 </Text>
                 <TouchableOpacity onPress={() => setType(null)}>
-                  <Ionicons name="close" size={12} color="#1D4ED8" />
+                  <Ionicons name="close" size={12} color={theme.accent} />
                 </TouchableOpacity>
               </View>
             )}
             {bedrooms !== null && (
-              <View className="flex-row items-center bg-blue-50 border border-blue-200 rounded-full px-3 py-1 gap-1">
-                <Ionicons name="bed-outline" size={11} color="#1D4ED8" />
-                <Text className="text-blue-700 text-xs font-semibold">
+              <View style={{ backgroundColor: theme.accentLight, borderColor: theme.accent, borderWidth: 1 }} className="flex-row items-center rounded-full px-3 py-1 gap-1">
+                <Ionicons name="bed-outline" size={11} color={theme.accent} />
+                <Text style={{ color: theme.accent }} className="text-xs font-semibold">
                   {bedrooms === 4
                     ? "4+ beds"
                     : `${bedrooms} bed${bedrooms > 1 ? "s" : ""}`}
                 </Text>
                 <TouchableOpacity onPress={() => setBedrooms(null)}>
-                  <Ionicons name="close" size={12} color="#1D4ED8" />
+                  <Ionicons name="close" size={12} color={theme.accent} />
                 </TouchableOpacity>
               </View>
             )}
             {(minPrice !== null || maxPrice !== null) && (
-              <View className="flex-row items-center bg-blue-50 border border-blue-200 rounded-full px-3 py-1 gap-1">
-                <Text className="text-blue-700 text-xs font-semibold">
+              <View style={{ backgroundColor: theme.accentLight, borderColor: theme.accent, borderWidth: 1 }} className="flex-row items-center rounded-full px-3 py-1 gap-1">
+                <Text style={{ color: theme.accent }} className="text-xs font-semibold">
                   {minPrice && maxPrice
                     ? `${formatPrice(minPrice)} – ${formatPrice(maxPrice)}`
                     : minPrice
@@ -341,7 +347,7 @@ export default function SearchScreen() {
                     setMaxPrice(null);
                   }}
                 >
-                  <Ionicons name="close" size={12} color="#1D4ED8" />
+                  <Ionicons name="close" size={12} color={theme.accent} />
                 </TouchableOpacity>
               </View>
             )}
@@ -352,8 +358,8 @@ export default function SearchScreen() {
       {/* Results / Spinner */}
       {loading ? (
         <View className="flex-1 items-center justify-center py-24">
-          <CustomSpinner size={44} color="#64748b" />
-          <Text className="text-gray-400 text-sm mt-3 font-semibold">
+          <CustomSpinner size={44} color={theme.textMuted} />
+          <Text style={{ color: theme.textMuted }} className="text-sm mt-3 font-semibold">
             Searching properties...
           </Text>
         </View>
@@ -361,21 +367,21 @@ export default function SearchScreen() {
         <FlatList
           data={results}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 80 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => <PropertyCard property={item} />}
           ListHeaderComponent={
-            <Text className="text-sm text-gray-400 mb-4">
+            <Text style={{ color: theme.textMuted }} className="text-sm mb-4">
               {`${results.length} properties found`}
             </Text>
           }
           ListEmptyComponent={
             <View className="items-center py-20">
-              <Ionicons name="search-outline" size={48} color="#D1D5DB" />
-              <Text className="text-gray-400 mt-4 text-base font-semibold">
+              <Ionicons name="search-outline" size={48} color={theme.textMuted} />
+              <Text style={{ color: theme.textMuted }} className="mt-4 text-base font-semibold">
                 No properties found
               </Text>
-              <Text className="text-gray-300 text-sm mt-1">
+              <Text style={{ color: theme.textMuted }} className="text-sm mt-1">
                 Try a different search or adjust filters
               </Text>
             </View>

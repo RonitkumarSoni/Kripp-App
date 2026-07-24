@@ -1,50 +1,60 @@
-# Welcome to your Expo app 👋
+# Kribb - Premium Real Estate App 🏠
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Kribb is a modern, high-performance real estate mobile application built with React Native (Expo) that allows users to discover, save, and list properties seamlessly. Designed with a premium iOS-style aesthetic and a dark/light theme, it delivers an exceptional user experience.
 
-## Get started
+## ✨ Features
 
-1. Install dependencies
+- **Auth System:** Secure authentication via Clerk.
+- **Dynamic Theming:** Premium iOS-style Dark and Light modes with seamless switching.
+- **Property Discovery:** Advanced search and filtering by property type, price, and bedrooms.
+- **Interactive Maps:** Built-in maps for property locations.
+- **Saved Properties:** Heart/bookmark your favorite properties to your saved list.
+- **List Properties:** Create property listings with camera and gallery integration.
+- **Real-time Notifications:** iOS-style sliding in-app notifications.
+- **Haptic Feedback:** Premium tactile responses on interactions (save, tab switch, etc.).
 
-   ```bash
-   npm install
-   ```
+## 🛠️ Tech Stack
 
-2. Start the app
+- **Framework:** [React Native](https://reactnative.dev/) / [Expo](https://expo.dev/) (SDK 51+)
+- **Routing:** [Expo Router](https://docs.expo.dev/router/introduction/)
+- **Styling:** [NativeWind](https://www.nativewind.dev/) (Tailwind CSS for React Native)
+- **Authentication:** [Clerk](https://clerk.com/)
+- **Database / Backend:** [Supabase](https://supabase.com/)
+- **Icons:** Expo Vector Icons (Ionicons)
+- **Maps:** React Native Webview / OpenStreetMap
 
-   ```bash
-   npx expo start
-   ```
+## 🚀 Getting Started
 
-In the output, you'll find options to open the app in a
+### Prerequisites
+Make sure you have Node.js installed, and either an iOS Simulator, Android Emulator, or the Expo Go app on your physical device.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+### 1. Install Dependencies
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Environment Variables
+Create a `.env` file in the root directory and add your credentials:
+```env
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_key
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-## Learn more
+### 3. Start the Development Server
+```bash
+npx expo start
+```
+Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press `i` / `a` to open in a simulator.
 
-To learn more about developing your project with Expo, look at the following resources:
+## 📱 Screenshots & UI
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+*(Add screenshots of your application here)*
 
-## Join the community
+## 🤝 Contributing
 
-Join our community of developers creating universal apps.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

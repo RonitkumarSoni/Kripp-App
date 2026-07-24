@@ -3,9 +3,11 @@ import { Image, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSavedProperty } from "../hooks/useSavedProperty";
+import { useTheme } from "../context/ThemeContext";
 
 export default function PropertyCard({ property }: { property: any }) {
   const router = useRouter();
+  const { theme } = useTheme();
 
   const formatPrice = (price: number) => {
     if (!price) return "₹0";
@@ -20,7 +22,8 @@ export default function PropertyCard({ property }: { property: any }) {
   return (
     <TouchableOpacity
       onPress={() => router.push(`/(root)/property/${property.id}`)}
-      className="flex-row bg-white rounded-2xl p-3 mb-3 border border-gray-100 shadow-sm relative overflow-hidden"
+      className="flex-row rounded-2xl p-3 mb-3 border shadow-sm relative overflow-hidden"
+      style={{ backgroundColor: theme.card, borderColor: theme.cardBorder }}
     >
       <Image
         source={{ uri: property.images?.[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800" }}
@@ -29,30 +32,30 @@ export default function PropertyCard({ property }: { property: any }) {
       />
       <View className="flex-1 ml-4 justify-between pr-4">
         <View>
-          <Text className="text-gray-900 font-semibold text-base leading-tight mb-1" numberOfLines={1}>
+          <Text style={{ color: theme.text }} className="font-semibold text-base leading-tight mb-1" numberOfLines={1}>
             {property.title}
           </Text>
           <View className="flex-row items-center mb-1">
-            <Ionicons name="location-outline" size={12} color="#6b7280" />
-            <Text className="text-gray-500 text-xs ml-1" numberOfLines={1}>
+            <Ionicons name="location-outline" size={12} color={theme.textSecondary} />
+            <Text style={{ color: theme.textSecondary }} className="text-xs ml-1" numberOfLines={1}>
               {property.city || property.address}
             </Text>
           </View>
         </View>
 
         <View className="flex-row items-end justify-between">
-          <Text className="text-blue-600 font-bold text-base">
+          <Text style={{ color: theme.accent }} className="font-bold text-base">
             {formatPrice(property.price)}
           </Text>
           <View className="flex-row items-center space-x-3">
             <View className="flex-row items-center">
-              <Ionicons name="bed-outline" size={12} color="#6b7280" />
-              <Text className="text-gray-600 text-xs ml-1">{property.bedrooms || 1} bd</Text>
+              <Ionicons name="bed-outline" size={12} color={theme.textSecondary} />
+              <Text style={{ color: theme.textSecondary }} className="text-xs ml-1">{property.bedrooms || 1} bd</Text>
             </View>
             {property.area_sqft && (
               <View className="flex-row items-center ml-2">
-                <Ionicons name="expand-outline" size={12} color="#6b7280" />
-                <Text className="text-gray-600 text-xs ml-1">{property.area_sqft} ft²</Text>
+                <Ionicons name="expand-outline" size={12} color={theme.textSecondary} />
+                <Text style={{ color: theme.textSecondary }} className="text-xs ml-1">{property.area_sqft} ft²</Text>
               </View>
             )}
           </View>

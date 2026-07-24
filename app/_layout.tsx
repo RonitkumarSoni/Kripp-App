@@ -60,6 +60,7 @@ if (!publishableKey) {
 }
 
 import { NotificationProvider } from "../context/NotificationContext";
+import { ThemeProvider } from "../context/ThemeContext";
 
 function InitialLayout() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -82,9 +83,11 @@ function InitialLayout() {
   }, [isSignedIn, isLoaded, segments, rootNavigationState?.key]);
 
   return (
-    <NotificationProvider>
-      <Slot />
-    </NotificationProvider>
+    <ThemeProvider>
+      <NotificationProvider>
+        <Slot />
+      </NotificationProvider>
+    </ThemeProvider>
   );
 }
 
