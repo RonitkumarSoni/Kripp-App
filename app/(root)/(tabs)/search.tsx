@@ -100,19 +100,24 @@ export default function SearchScreen() {
 
       const res = await query.order("created_at", { ascending: false });
 
-      if (res && res.data && res.data.length > 0) {
-        setResults(res.data);
-      } else {
-        const filtered = filterSeedProperties(
-          SEED_PROPERTIES,
-          search,
-          type,
-          bedrooms,
-          minPrice,
-          maxPrice
-        );
-        setResults(filtered);
-      }
+      const dbProperties = res && res.data ? res.data : [];
+      const combined = [...dbProperties];
+      
+      SEED_PROPERTIES.forEach(seed => {
+        if (!combined.find(p => p.id === seed.id)) {
+          combined.push(seed);
+        }
+      });
+
+      const filtered = filterSeedProperties(
+        combined,
+        search,
+        type,
+        bedrooms,
+        minPrice,
+        maxPrice
+      );
+      setResults(filtered);
     } catch (err) {
       console.error("Fetch search results error:", err);
       const filtered = filterSeedProperties(

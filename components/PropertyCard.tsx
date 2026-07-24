@@ -5,9 +5,18 @@ import { useRouter } from "expo-router";
 import { useSavedProperty } from "../hooks/useSavedProperty";
 import { useTheme } from "../context/ThemeContext";
 
-export default function PropertyCard({ property }: { property: any }) {
+interface PropertyCardProps {
+  property: any;
+  onUnsave?: () => void;
+}
+
+export default function PropertyCard({ property, onUnsave }: PropertyCardProps) {
   const router = useRouter();
   const { theme } = useTheme();
+  const { isSaved, saveLoading, toggleSave } = useSavedProperty(
+    property.id,
+    onUnsave
+  );
 
   const formatPrice = (price: number) => {
     if (!price) return "₹0";
@@ -61,6 +70,35 @@ export default function PropertyCard({ property }: { property: any }) {
           </View>
         </View>
       </View>
+
+      {/* Heart / Save Button */}
+      <TouchableOpacity
+        onPress={toggleSave}
+        disabled={saveLoading}
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          backgroundColor: theme.card,
+          borderRadius: 16,
+          width: 30,
+          height: 30,
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 20,
+          elevation: 3,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: theme.mode === 'dark' ? 0.3 : 0.1,
+          shadowRadius: 3,
+        }}
+      >
+        <Ionicons
+          name={isSaved ? "heart" : "heart-outline"}
+          size={16}
+          color={isSaved ? "#EF4444" : theme.textSecondary}
+        />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }

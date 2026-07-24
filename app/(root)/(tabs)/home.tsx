@@ -62,11 +62,18 @@ export default function HomeScreen() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      let list =
-        res && res.data && res.data.length > 0 ? res.data : SEED_PROPERTIES;
+      const dbProperties = res && res.data ? res.data : [];
+      
+      // Combine DB properties with SEED_PROPERTIES, ensuring no duplicates if IDs match
+      const combined = [...dbProperties];
+      SEED_PROPERTIES.forEach(seed => {
+        if (!combined.find(p => p.id === seed.id)) {
+          combined.push(seed);
+        }
+      });
 
-      setFeatured(list.filter((p: Property) => p.is_featured));
-      setRecommended(list.filter((p: Property) => !p.is_featured));
+      setFeatured(combined.filter((p: Property) => p.is_featured));
+      setRecommended(combined.filter((p: Property) => !p.is_featured));
     } catch (err) {
       console.error("Error fetching properties:", err);
       setFeatured(SEED_PROPERTIES.filter((p) => p.is_featured));

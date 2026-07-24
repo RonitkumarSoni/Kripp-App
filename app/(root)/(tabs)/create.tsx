@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -11,7 +12,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from "react-native";
+import { WebView } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomSpinner from "../../../components/CustomSpinner";
@@ -63,6 +66,7 @@ const INITIAL_FORM: FormState = {
 
 export default function CreatePropertyScreen() {
   const router = useRouter();
+  const { user } = useUser();
   const authSupabase = useSupabase();
   const { showNotification } = useInAppNotification();
   const { theme } = useTheme();
@@ -73,6 +77,8 @@ export default function CreatePropertyScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [tempCoords, setTempCoords] = useState<{lat: number, lng: number} | null>(null);
 
   const updateForm = (fields: Partial<FormState>) =>
     setForm((prev) => ({ ...prev, ...fields }));
@@ -268,6 +274,7 @@ export default function CreatePropertyScreen() {
 
     try {
       const { error } = await authSupabase.from("properties").insert({
+        owner_clerk_id: user?.id || null,
         title: form.title.trim(),
         description: form.description.trim(),
         price: priceNum,
@@ -286,9 +293,23 @@ export default function CreatePropertyScreen() {
 
       if (error) {
         console.error("Supabase insert error:", error);
+        showNotification({
+          title: "Failed to List",
+          body: error.message || "Something went wrong. Please try again.",
+          type: "error",
+        });
+        setSubmitting(false);
+        return;
       }
     } catch (e) {
       console.error("Submit error:", e);
+      showNotification({
+        title: "Error",
+        body: "Could not create property. Check your connection.",
+        type: "error",
+      });
+      setSubmitting(false);
+      return;
     } finally {
       setSubmitting(false);
     }
@@ -574,21 +595,33 @@ export default function CreatePropertyScreen() {
           <View className={sectionClass}>
             <View className="flex-row items-center justify-between mb-1.5">
               <Text style={{ color: theme.textSecondary }} className={labelClass}>Coordinates</Text>
-              <TouchableOpacity
-                onPress={handleDetectLocation}
-                disabled={detectingLocation}
-                style={{ backgroundColor: theme.accentLight }}
-                className="flex-row items-center gap-1 px-3 py-1.5 rounded-full"
-              >
-                {detectingLocation ? (
-                  <CustomSpinner size={14} color={theme.accent} />
-                ) : (
-                  <Ionicons name="locate-outline" size={13} color={theme.accent} />
-                )}
-                <Text style={{ color: theme.accent }} className="text-xs font-semibold">
-                  {detectingLocation ? "Detecting..." : "Detect Location"}
-                </Text>
-              </TouchableOpacity>
+              <View className="flex-row items-center gap-2">
+                <TouchableOpacity
+                  onPress={() => {
+                    setTempCoords({ lat: Number(form.latitude) || 19.0760, lng: Number(form.longitude) || 72.8777 });
+                    setShowMapPicker(true);
+                  }}
+                  style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, borderWidth: 1 }}
+                  className="w-8 h-8 rounded-full items-center justify-center"
+                >
+                  <Ionicons name="map-outline" size={16} color={theme.text} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDetectLocation}
+                  disabled={detectingLocation}
+                  style={{ backgroundColor: theme.accentLight }}
+                  className="flex-row items-center gap-1 px-3 py-1.5 rounded-full"
+                >
+                  {detectingLocation ? (
+                    <CustomSpinner size={14} color={theme.accent} />
+                  ) : (
+                    <Ionicons name="locate-outline" size={13} color={theme.accent} />
+                  )}
+                  <Text style={{ color: theme.accent }} className="text-xs font-semibold">
+                    {detectingLocation ? "Detecting..." : "Detect Location"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View className="flex-row gap-3">
@@ -644,6 +677,89 @@ export default function CreatePropertyScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Map Picker Modal */}
+      <Modal
+        visible={showMapPicker}
+        animationType="slide"
+        onRequestClose={() => setShowMapPicker(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
+          <View style={{ borderBottomColor: theme.cardBorder }} className="flex-row items-center justify-between px-4 py-3 border-b">
+            <TouchableOpacity onPress={() => setShowMapPicker(false)}>
+              <Text style={{ color: theme.textMuted }} className="font-semibold text-base">Cancel</Text>
+            </TouchableOpacity>
+            <Text style={{ color: theme.text }} className="font-bold text-lg">Pick Location</Text>
+            <TouchableOpacity onPress={() => {
+              if (tempCoords) {
+                updateForm({
+                  latitude: String(tempCoords.lat),
+                  longitude: String(tempCoords.lng)
+                });
+              }
+              setShowMapPicker(false);
+            }}>
+              <Text style={{ color: theme.accent }} className="font-semibold text-base">Done</Text>
+            </TouchableOpacity>
+          </View>
+          <View className="flex-1">
+            <WebView
+              source={{
+                html: `
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                      <style>body { padding: 0; margin: 0; } html, body, #map { height: 100%; width: 100vw; }</style>
+                  </head>
+                  <body>
+                      <div id="map"></div>
+                      <script>
+                          var initialLat = ${form.latitude || 19.0760};
+                          var initialLng = ${form.longitude || 72.8777};
+                          var map = L.map('map').setView([initialLat, initialLng], 12);
+                          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap contributors'
+                          }).addTo(map);
+                          var marker = L.marker([initialLat, initialLng], {draggable: true}).addTo(map);
+                          
+                          function sendCoords(lat, lng) {
+                              window.ReactNativeWebView.postMessage(JSON.stringify({lat: lat, lng: lng}));
+                          }
+                          
+                          marker.on('dragend', function (e) {
+                              var coords = e.target.getLatLng();
+                              sendCoords(coords.lat, coords.lng);
+                          });
+                          
+                          map.on('click', function(e) {
+                              marker.setLatLng(e.latlng);
+                              sendCoords(e.latlng.lat, e.latlng.lng);
+                          });
+                      </script>
+                  </body>
+                  </html>
+                `
+              }}
+              onMessage={(event) => {
+                try {
+                  const data = JSON.parse(event.nativeEvent.data);
+                  setTempCoords(data);
+                } catch(e) {}
+              }}
+              javaScriptEnabled={true}
+              scrollEnabled={false}
+              style={{ flex: 1 }}
+            />
+          </View>
+          <View style={{ backgroundColor: theme.bg }} className="p-4 items-center">
+            <Text style={{ color: theme.textMuted }}>Tap anywhere on the map or drag the marker.</Text>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
     </SafeAreaView>
   );
 }

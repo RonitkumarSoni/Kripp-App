@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import CustomSpinner from "../../../components/CustomSpinner";
 import PropertyCard from "../../../components/PropertyCard";
@@ -17,6 +18,8 @@ import { Property, SavedProperty } from "../../../types";
 
 import { SEED_PROPERTIES } from "../../../constants/data";
 import { useTheme } from "../../../context/ThemeContext";
+
+const LOCAL_SAVED_KEY = "kribb_local_saved_properties";
 
 export default function SavedScreen() {
   const { user } = useUser();
@@ -30,39 +33,48 @@ export default function SavedScreen() {
   const fetchSaved = useCallback(async () => {
     setLoading(true);
     try {
-      if (!user) {
-        // Fallback for unauthenticated state
-        const fallback = SEED_PROPERTIES.slice(0, 2).map((p) => ({
-          id: `saved_${p.id}`,
-          property_id: p.id,
-          properties: p,
-        }));
-        setSaved(fallback);
-        setLoading(false);
-        return;
-      }
+      const allSaved: SavedProperty[] = [];
 
-      const res = await supabase
-        .from("saved_properties")
-        .select("id, property_id, properties(*)")
-        .eq("user_clerk_id", user.id)
-        .order("id", { ascending: false });
-
-      if (res && res.data) {
-        const validSaved = res.data.map((item: any) => {
-          if (item.properties !== null) return item;
-          // If the property doesn't exist in Supabase DB but is a seeded item
-          const seeded = SEED_PROPERTIES.find(p => p.id === item.property_id);
+      // 1. Fetch locally saved seeded properties from AsyncStorage
+      try {
+        const raw = await AsyncStorage.getItem(LOCAL_SAVED_KEY);
+        const localIds: string[] = raw ? JSON.parse(raw) : [];
+        localIds.forEach((id) => {
+          const seeded = SEED_PROPERTIES.find((p) => p.id === id);
           if (seeded) {
-            return { ...item, properties: seeded };
+            allSaved.push({
+              id: `local_${id}`,
+              property_id: id,
+              properties: seeded,
+            });
           }
-          return null;
-        }).filter((item: any) => item !== null);
-        
-        setSaved(validSaved as unknown as SavedProperty[]);
-      } else {
-        setSaved([]);
+        });
+      } catch (e) {
+        console.error("Error reading local saved:", e);
       }
+
+      // 2. Fetch DB-saved properties from Supabase (only if user is logged in)
+      if (user) {
+        try {
+          const res = await supabase
+            .from("saved_properties")
+            .select("id, property_id, properties(*)")
+            .eq("user_clerk_id", user.id)
+            .order("id", { ascending: false });
+
+          if (res && res.data) {
+            res.data.forEach((item: any) => {
+              if (item.properties !== null) {
+                allSaved.push(item as unknown as SavedProperty);
+              }
+            });
+          }
+        } catch (e) {
+          console.error("Error fetching DB saved:", e);
+        }
+      }
+
+      setSaved(allSaved);
     } catch (err) {
       console.error("Fetch saved error:", err);
       setSaved([]);
@@ -105,6 +117,7 @@ export default function SavedScreen() {
           renderItem={({ item }) => (
             <PropertyCard
               property={item.properties}
+              onUnsave={fetchSaved}
             />
           )}
           ListEmptyComponent={
