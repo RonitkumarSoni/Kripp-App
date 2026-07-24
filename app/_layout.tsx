@@ -62,14 +62,40 @@ if (!publishableKey) {
 import { NotificationProvider } from "../context/NotificationContext";
 import { ThemeProvider } from "../context/ThemeContext";
 
+import { useSupabase } from "../hooks/useSupabase";
+import { useUser } from "@clerk/clerk-expo";
+
 function InitialLayout() {
   const { isLoaded, isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
   const segments = useSegments();
   const router = useRouter();
   const rootNavigationState = useRootNavigationState();
+  const supabase = useSupabase();
 
   useEffect(() => {
     if (!isLoaded || !rootNavigationState?.key) return;
+
+    const syncUser = async () => {
+      if (isSignedIn && clerkUser) {
+        try {
+          await supabase.from("users").upsert(
+            {
+              clerk_id: clerkUser.id,
+              email: clerkUser.primaryEmailAddress?.emailAddress,
+              first_name: clerkUser.firstName,
+              last_name: clerkUser.lastName,
+              avatar_url: clerkUser.imageUrl,
+            },
+            { onConflict: "clerk_id" }
+          );
+        } catch (error) {
+          console.error("Error syncing user to Supabase:", error);
+        }
+      }
+    };
+
+    syncUser();
 
     const inAuthGroup = segments[0] === '(auth)';
 
@@ -80,7 +106,7 @@ function InitialLayout() {
       // If not signed in and not on auth screen, go to sign in
       router.replace('/(auth)/sign-in');
     }
-  }, [isSignedIn, isLoaded, segments, rootNavigationState?.key]);
+  }, [isSignedIn, isLoaded, segments, rootNavigationState?.key, clerkUser]);
 
   return (
     <ThemeProvider>

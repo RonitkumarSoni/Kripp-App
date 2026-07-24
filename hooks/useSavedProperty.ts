@@ -110,11 +110,18 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
         if (!user) return;
 
         if (prevSaved) {
-          await supabase
+          const { error } = await supabase
             .from("saved_properties")
             .delete()
             .eq("user_clerk_id", user.id)
             .eq("property_id", propertyId);
+            
+          if (error) {
+            console.error("Supabase delete error:", error);
+            setIsSaved(prevSaved);
+            return showNotification({ title: "Error", body: "Could not unsave.", type: "error" });
+          }
+            
           if (onUnsave) onUnsave();
           showNotification({
             title: "Removed from Saved",
@@ -122,10 +129,17 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
             type: "info",
           });
         } else {
-          await supabase.from("saved_properties").insert({
+          const { error } = await supabase.from("saved_properties").insert({
             user_clerk_id: user.id,
             property_id: propertyId,
           });
+          
+          if (error) {
+            console.error("Supabase insert error:", error);
+            setIsSaved(prevSaved);
+            return showNotification({ title: "Error", body: "Could not save property. Check DB constraints.", type: "error" });
+          }
+          
           showNotification({
             title: "Property Saved",
             body: "Added to your saved collection.",
