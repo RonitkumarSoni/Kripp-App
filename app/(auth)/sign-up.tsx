@@ -1,10 +1,13 @@
-import { useSignUp } from '@clerk/clerk-expo';
-import { Link, useRouter } from 'expo-router';
+import { useSignUp, useSignIn, useAuth } from '@clerk/clerk-expo';
+import { Link, useRouter, Redirect } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import CustomSpinner from '../../components/CustomSpinner';
 
 export default function SignUp() {
     const { isLoaded, signUp, setActive } = useSignUp();
+    const { signIn } = useSignIn();
+    const { isSignedIn, isLoaded: isAuthLoaded } = useAuth();
     const router = useRouter();
 
     const [firstName, setFirstName] = useState("");
@@ -13,62 +16,145 @@ export default function SignUp() {
     const [password, setPassword] = useState("");
     const [pendingVerification, setPendingVerification] = useState(false);
     const [code, setCode] = useState("");
-    const [errors, setErrors] = useState<any>({ fields: {} });
+    const [errorMsg, setErrorMsg] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    if (isAuthLoaded && isSignedIn) {
+        return <Redirect href="/(root)/(tabs)/home" />;
+    }
+
+    const parseClerkError = (error: any): string => {
+        const errObj = error?.errors?.[0];
+        if (!errObj) return error?.message || "An error occurred during sign up";
+
+        const code = errObj.code;
+        const msg = errObj.longMessage || errObj.message || "";
+        const param = errObj.meta?.paramName || errObj.paramName || "";
+
+        if (code === "form_identifier_exists" || msg.toLowerCase().includes("already exists") || msg.toLowerCase().includes("taken")) {
+            return "An account with this email address already exists. Please Log In.";
+        }
+
+        if (param === "email_address" || msg.toLowerCase().includes("email_address")) {
+            return "Please enter a valid email address.";
+        }
+
+        if (param === "password" || msg.toLowerCase().includes("password")) {
+            return "Password is invalid. Password must be at least 8 characters long.";
+        }
+
+        if (param) {
+            const formattedParam = param.replace('_', ' ');
+            return `${formattedParam.charAt(0).toUpperCase() + formattedParam.slice(1)} ${msg}`;
+        }
+
+        return msg || "An error occurred during sign up";
+    };
 
     const onSignUpPress = async () => {
-        if (!isLoaded) return;
+        if (!isLoaded || submitting) return;
+        setSubmitting(true);
+        setErrorMsg("");
+
+        if (!email.trim()) {
+            setErrorMsg("Email address is required.");
+            setSubmitting(false);
+            return;
+        }
+
+        if (!password || password.length < 8) {
+            setErrorMsg("Password must be at least 8 characters long.");
+            setSubmitting(false);
+            return;
+        }
         
         try {
-            await signUp.create({
-                emailAddress: email,
+            const createAttempt = await signUp.create({
+                emailAddress: email.trim(),
                 password,
-                firstName,
-                lastName,
+                firstName: firstName.trim() || undefined,
+                lastName: lastName.trim() || undefined,
             });
             
-            if (signUp.status === 'complete') {
-                // If Clerk settings don't require email verification, we are done
-                await setActive({ session: signUp.createdSessionId });
-                router.replace('/(root)/(tabs)/Home');
+            if (createAttempt.status === 'complete' && createAttempt.createdSessionId) {
+                await setActive({ session: createAttempt.createdSessionId });
+                router.replace('/(root)/(tabs)/home');
             } else {
-                // Otherwise, prepare email verification and show the Verify UI
                 await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
                 setPendingVerification(true);
             }
         } catch (error: any) {
-            alert(error.errors?.[0]?.message || error.message || "An error occurred");
+            setErrorMsg(parseClerkError(error));
+        } finally {
+            setSubmitting(false);
         }
     };
 
     const onPressVerify = async () => {
-        if (!isLoaded) return;
+        if (!isLoaded || submitting) return;
+        setSubmitting(true);
+        setErrorMsg("");
 
         try {
             const completeSignUp = await signUp.attemptEmailAddressVerification({ code });
 
-            if (completeSignUp.status === 'complete') {
+            if (completeSignUp.status === 'complete' && completeSignUp.createdSessionId) {
                 await setActive({ session: completeSignUp.createdSessionId });
-                router.replace('/(root)/(tabs)/Home');
+                router.replace('/(root)/(tabs)/home');
+                return;
+            } else if (completeSignUp.createdSessionId) {
+                await setActive({ session: completeSignUp.createdSessionId });
+                router.replace('/(root)/(tabs)/home');
+                return;
             } else {
-                console.error(JSON.stringify(completeSignUp, null, 2));
+                setErrorMsg(`Verification status: ${completeSignUp.status}. Please check your code.`);
             }
         } catch (err: any) {
-            const message = Array.isArray(err?.errors) && err.errors[0]?.message
-                ? err.errors[0].message
-                : "Invalid code";
-            setErrors({ fields: { code: { message } } });
+            const errObj = err?.errors?.[0];
+            const msg = errObj?.longMessage || errObj?.message || err?.message || "";
+            const errCode = errObj?.code;
+
+            const isAlreadyVerified = 
+                msg.toLowerCase().includes("already been verified") || 
+                msg.toLowerCase().includes("already verified") || 
+                errCode === "verification_already_verified";
+
+            if (isAlreadyVerified) {
+                if (signUp?.createdSessionId) {
+                    await setActive({ session: signUp.createdSessionId });
+                    router.replace('/(root)/(tabs)/home');
+                    return;
+                } else if (signIn && email && password) {
+                    try {
+                        const autoLogin = await signIn.create({ identifier: email, password });
+                        if (autoLogin.createdSessionId) {
+                            await setActive({ session: autoLogin.createdSessionId });
+                            router.replace('/(root)/(tabs)/home');
+                            return;
+                        }
+                    } catch (signInErr) {
+                        console.error("Auto sign in failed:", signInErr);
+                    }
+                }
+                router.replace('/sign-in');
+                return;
+            }
+
+            setErrorMsg(parseClerkError(err));
+        } finally {
+            setSubmitting(false);
         }
     };
 
     const onResendCodePress = async () => {
         if (!isLoaded) return;
+        setErrorMsg("");
         try {
             await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-            Alert.alert("Code Sent", "A new verification code has been sent to your email.");
-            setErrors({ fields: {} });
+            setErrorMsg("A new verification code has been sent to your email.");
             setCode("");
         } catch (error: any) {
-            Alert.alert("Error", error.errors?.[0]?.message || error.message || "Failed to resend code");
+            setErrorMsg(error.errors?.[0]?.message || error.message || "Failed to resend code");
         }
     };
 
@@ -82,31 +168,39 @@ export default function SignUp() {
                     resizeMode="contain"
                 />
                 <Text className="text-3xl font-semibold text-gray-900 mb-2 tracking-tight">Verify your account</Text>
-                <Text className="text-gray-500 mb-6">We sent a code to</Text>
+                <Text className="text-gray-500 mb-6">We sent a verification code to {email}</Text>
                 
                 <TextInput
                     value={code}
                     placeholder="Enter verification code"
-                    className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 mb-2 focus:border-gray-300 focus:outline-none"
+                    className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 mb-4 focus:border-gray-300 focus:outline-none"
                     onChangeText={(val) => {
                         setCode(val);
-                        if (errors.fields?.code) setErrors({ fields: {} });
+                        if (errorMsg) setErrorMsg("");
                     }}
                     keyboardType="number-pad"
                 />
 
-                {errors.fields?.code && (
-                    <Text className="text-red-500 mb-4 text-sm">
-                        {errors.fields.code.message}
+                {errorMsg ? (
+                    <Text className="text-red-500 mb-4 text-sm font-medium">
+                        {errorMsg}
                     </Text>
-                )}
+                ) : null}
                 
-                <TouchableOpacity onPress={onPressVerify} className="bg-blue-600 rounded-lg py-3.5 items-center mb-4 mt-4">
-                    <Text className="text-white font-semibold text-base">Verify</Text>
+                <TouchableOpacity 
+                    onPress={onPressVerify} 
+                    disabled={submitting}
+                    className="bg-blue-600 rounded-lg py-3.5 items-center mb-4 mt-2"
+                >
+                    {submitting ? (
+                        <CustomSpinner size={22} color="white" />
+                    ) : (
+                        <Text className="text-white font-semibold text-base">Verify</Text>
+                    )}
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={onResendCodePress}>
-                    <Text className="text-blue-600 text-sm">I need a new code</Text>
+                    <Text className="text-blue-600 text-sm font-medium">I need a new code</Text>
                 </TouchableOpacity>
                 </View>
             </View>
@@ -174,21 +268,34 @@ export default function SignUp() {
                     />
                 </View>
 
-                <TouchableOpacity onPress={onSignUpPress} className="bg-blue-600 rounded-lg py-3.5 items-center">
-                    <Text className="text-white font-semibold text-base">Sign Up</Text>
+                {errorMsg ? (
+                    <Text className="text-red-500 mb-4 text-sm font-medium">
+                        {errorMsg}
+                    </Text>
+                ) : null}
+
+                <TouchableOpacity 
+                    onPress={onSignUpPress} 
+                    disabled={submitting}
+                    className="bg-blue-600 rounded-lg py-3.5 items-center"
+                >
+                    {submitting ? (
+                        <CustomSpinner size={22} color="white" />
+                    ) : (
+                        <Text className="text-white font-semibold text-base">Sign Up</Text>
+                    )}
                 </TouchableOpacity>
 
                 <View className="flex-row justify-center mt-6">
                     <Text className="text-gray-500 text-base">Already have an account? </Text>
                     <Link href="/sign-in" asChild>
                         <TouchableOpacity>
-                            <Text className="text-blue-600 font-semibold text-base">Sign In</Text>
+                            <Text className="text-blue-600 font-semibold text-base">Log In</Text>
                         </TouchableOpacity>
                     </Link>
                 </View>
-                <View nativeID='Clerk-captcha'/>
                 </View>
             </View>
         </ScrollView>
-    )
+    );
 }

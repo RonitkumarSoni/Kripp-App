@@ -1,32 +1,74 @@
-import { View, Text, ScrollView, Image, TextInput, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
-import { useSignIn } from '@clerk/clerk-expo'
-import { Link, useRouter } from 'expo-router';
+import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { useSignIn, useAuth } from '@clerk/clerk-expo';
+import { Link, useRouter, Redirect } from 'expo-router';
 
 export default function SignIn() {
-    const { signIn, setActive, isLoaded } = useSignIn();
+    const { signIn, setActive, isLoaded: isSignInLoaded } = useSignIn();
+    const { isSignedIn, isLoaded: isAuthLoaded } = useAuth();
     const router = useRouter();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
+
+    if (isAuthLoaded && isSignedIn) {
+        return <Redirect href="/(root)/(tabs)/home" />;
+    }
+
+    const parseClerkError = (error: any): string => {
+        const errObj = error?.errors?.[0];
+        if (!errObj) return error?.message || "Invalid email address or password";
+
+        const code = errObj.code;
+        const msg = errObj.longMessage || errObj.message || "";
+
+        if (code === "form_identifier_not_found" || msg.toLowerCase().includes("couldn't find") || msg.toLowerCase().includes("not found")) {
+            return "Couldn't find your account with this email address. Please check your email or Sign Up.";
+        }
+
+        if (code === "form_password_incorrect" || msg.toLowerCase().includes("password")) {
+            return "Incorrect password. Please try again.";
+        }
+
+        return msg || "Invalid email address or password";
+    };
 
     const onSignInPress = async () => {
-        if (!isLoaded) return;
+        if (!isSignInLoaded || submitting) return;
+        setSubmitting(true);
+        setErrorMsg("");
+
+        if (!email.trim()) {
+            setErrorMsg("Email address is required.");
+            setSubmitting(false);
+            return;
+        }
+
+        if (!password) {
+            setErrorMsg("Password is required.");
+            setSubmitting(false);
+            return;
+        }
 
         try {
             const completeSignIn = await signIn.create({
-                identifier: email,
+                identifier: email.trim(),
                 password,
             });
 
-            if (completeSignIn.status === 'complete') {
+            if (completeSignIn.status === 'complete' && completeSignIn.createdSessionId) {
                 await setActive({ session: completeSignIn.createdSessionId });
-                router.replace('/(root)/(tabs)/Home');
+                router.replace('/(root)/(tabs)/home');
             } else {
-                console.error(JSON.stringify(completeSignIn, null, 2));
+                console.error("SignIn status not complete:", JSON.stringify(completeSignIn, null, 2));
+                setErrorMsg("Sign in incomplete. Please check your credentials.");
             }
         } catch (error: any) {
-            alert(error.errors?.[0]?.message || error.message || "Invalid credentials");
+            setErrorMsg(parseClerkError(error));
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -56,7 +98,10 @@ export default function SignIn() {
                         autoCapitalize="none"
                         className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 mb-4 focus:border-gray-300 focus:outline-none" 
                         value={email}
-                        onChangeText={setEmail}
+                        onChangeText={(val) => {
+                            setEmail(val);
+                            if (errorMsg) setErrorMsg("");
+                        }}
                     />
                     <TextInput 
                         placeholder="Password" 
@@ -64,12 +109,29 @@ export default function SignIn() {
                         secureTextEntry 
                         className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:border-gray-300 focus:outline-none" 
                         value={password}
-                        onChangeText={setPassword}
+                        onChangeText={(val) => {
+                            setPassword(val);
+                            if (errorMsg) setErrorMsg("");
+                        }}
                     />
                 </View>
 
-                <TouchableOpacity onPress={onSignInPress} className="bg-blue-600 rounded-lg py-3.5 items-center">
-                    <Text className="text-white font-semibold text-base">Sign In</Text>
+                {errorMsg ? (
+                    <Text className="text-red-500 text-sm font-medium mb-4">
+                        {errorMsg}
+                    </Text>
+                ) : null}
+
+                <TouchableOpacity 
+                    onPress={onSignInPress} 
+                    disabled={submitting}
+                    className="bg-blue-600 rounded-lg py-3.5 items-center"
+                >
+                    {submitting ? (
+                        <ActivityIndicator color="white" />
+                    ) : (
+                        <Text className="text-white font-semibold text-base">Sign In</Text>
+                    )}
                 </TouchableOpacity>
 
                 <View className="flex-row justify-center mt-6">
@@ -83,5 +145,5 @@ export default function SignIn() {
                 </View>
             </View>
         </ScrollView>
-    )
+    );
 }

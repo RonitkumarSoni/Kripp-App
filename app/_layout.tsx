@@ -1,133 +1,98 @@
-// import { ScrollView, Text, TextInput, TouchableOpacity, View,TouchableHighlight ,Platform,StatusBar} from "react-native";
-// import { SafeAreaView } from "react-native-safe-area-context";
-// import "../global.css";
-
-// const properties = [
-//   {
-//     id: '1', title: 'Modern Villa', city: 'Mumbai', price:
-//       '₹1.2Cr'
-//   },
-//   {
-//     id: '2', title: 'Sea View Flat', city: 'Mumbai', price:
-//       '₹85L'
-//   },
-//   {
-//     id: '3', title: 'Studio Loft', city: 'Bangalore', price:
-//       '₹32L'
-//   },
-// ];
-
-// export default function RootLayout() {
-//   return (
-//     <SafeAreaView style={{ flex: 1 }}>
-//       <View>
-//         <Text>Hellow</Text>
-
-
-//         <TextInput placeholder="search City.." placeholderTextColor="#999" style={{
-//           backgroundColor: "#ddd",
-//           padding: 10,
-//           marginTop: 12,
-//           borderWidth: 1,
-//           borderColor: "#ccc",
-//           borderRadius: 8,
-//         }} />
-
-//         <TouchableOpacity style={{
-//           backgroundColor: "#007AFF",
-//           paddingVertical: 12,
-//           paddingHorizontal: 20,
-//           borderRadius: 8,
-//           alignItems: "center",
-//           justifyContent: "center",
-//           marginTop: 15,
-//         }}
-//           onPress={() => alert("searching")}>
-//           <Text>Search</Text>
-//         </TouchableOpacity>
-
-//         <TouchableHighlight style={{
-//           backgroundColor: "#666",
-//           paddingVertical: 12,
-//           paddingHorizontal: 20,
-//           borderRadius: 8,
-//           alignItems: "center",
-//           justifyContent: "center",
-//           marginTop: 15,
-//         }}
-//           onPress={() => alert("searching")}>
-//           <Text>Highlight</Text>
-//         </TouchableHighlight>
-
-//       </View>
-
-//       <StatusBar hidden={true} backgroundColor="#007AFF" barStyle="light-content"/> <Text>Platform: {Platform.OS}</Text>
-//       <ScrollView>
-//         {properties.map((item) => (
-//           <View key={item.id}>
-//             <Text>{item.title}</Text>
-//             <Text>{item.city}</Text>
-//             <Text>{item.price}</Text>
-//           </View>
-//         ))}
-//       </ScrollView>
-
-//       {/* <FlatList data={properties} keyExtractor={(item) => item.id} 
-//       renderItem={({item})=>(
-//         <View>
-//           <Text>{item.title}</Text>
-//           <Text>{item.city}</Text>
-//           <Text>{item.price}</Text>
-//         </View>
-//       )}
-//       /> */}
-
-//     </SafeAreaView>
-//   );
-// }
-
-
-import { Stack } from "expo-router";
-import { ClerkProvider, ClerkLoaded } from '@clerk/clerk-expo';
+import { Slot, useRouter, useSegments, useRootNavigationState } from "expo-router";
+import { ClerkProvider, ClerkLoaded, useAuth } from '@clerk/clerk-expo';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+import React, { useEffect } from 'react';
 import "../global.css";
 
-const tokenCache = {
-  async getToken(key: string) {
-    try {
-      const item = await SecureStore.getItemAsync(key);
-      if (item) {
-        console.log(`${key} was used 🔐 \n`);
-      } else {
-        console.log('No values stored under key: ' + key);
+// DOMException polyfill - React Native mein ye nahi hota, Supabase ko chahiye
+if (typeof globalThis.DOMException === 'undefined') {
+  (globalThis as any).DOMException = class DOMException extends Error {
+    constructor(message?: string, name?: string) {
+      super(message);
+      this.name = name || 'DOMException';
+    }
+  };
+}
+
+const createTokenCache = () => {
+  return {
+    async getToken(key: string) {
+      try {
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined') {
+            return localStorage.getItem(key);
+          }
+          return null;
+        }
+        const item = await SecureStore.getItemAsync(key);
+        return item;
+      } catch (error) {
+        console.error('SecureStore get item error: ', error);
+        if (Platform.OS !== 'web') {
+          await SecureStore.deleteItemAsync(key).catch(() => {});
+        }
+        return null;
       }
-      return item;
-    } catch (error) {
-      console.error('SecureStore get item error: ', error);
-      await SecureStore.deleteItemAsync(key);
-      return null;
-    }
-  },
-  async saveToken(key: string, value: string) {
-    try {
-      return SecureStore.setItemAsync(key, value);
-    } catch (err) {
-      return;
-    }
-  },
+    },
+    async saveToken(key: string, value: string) {
+      try {
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(key, value);
+          }
+          return;
+        }
+        return SecureStore.setItemAsync(key, value);
+      } catch (err) {
+        console.error('SecureStore save item error: ', err);
+        return;
+      }
+    },
+  };
 };
 
+const tokenCache = createTokenCache();
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 if (!publishableKey) {
   throw new Error('Add your Clerk Publishable Key to the .env file');
 }
 
+import { NotificationProvider } from "../context/NotificationContext";
+
+function InitialLayout() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+  const rootNavigationState = useRootNavigationState();
+
+  useEffect(() => {
+    if (!isLoaded || !rootNavigationState?.key) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (isSignedIn) {
+      if (inAuthGroup || segments.length === 0) {
+        router.replace('/(root)/(tabs)/home');
+      }
+    } else if (!isSignedIn && !inAuthGroup) {
+      router.replace('/sign-in');
+    }
+  }, [isSignedIn, isLoaded, segments, rootNavigationState?.key]);
+
+  return (
+    <NotificationProvider>
+      <Slot />
+    </NotificationProvider>
+  );
+}
+
 export default function RootLayout() {
   return (
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
       <ClerkLoaded>
-        <Stack screenOptions={{ headerShown: false }} />
+        <InitialLayout />
       </ClerkLoaded>
     </ClerkProvider>
   );
