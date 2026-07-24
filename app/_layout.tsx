@@ -73,12 +73,12 @@ function InitialLayout() {
 
     const inAuthGroup = segments[0] === '(auth)';
 
-    if (isSignedIn) {
-      if (inAuthGroup || segments.length === 0) {
-        router.replace('/(root)/(tabs)/home');
-      }
+    if (isSignedIn && inAuthGroup) {
+      // If signed in and on an auth screen, go to home
+      router.replace('/(root)/(tabs)/home');
     } else if (!isSignedIn && !inAuthGroup) {
-      router.replace('/sign-in');
+      // If not signed in and not on auth screen, go to sign in
+      router.replace('/(auth)/sign-in');
     }
   }, [isSignedIn, isLoaded, segments, rootNavigationState?.key]);
 
