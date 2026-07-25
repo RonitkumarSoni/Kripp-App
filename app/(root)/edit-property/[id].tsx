@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useUser } from "@clerk/clerk-expo";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -12,10 +12,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Modal,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { WebView } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomSpinner from "../../../components/CustomSpinner";
@@ -42,61 +40,74 @@ interface FormState {
   areaSqft: string;
   address: string;
   city: string;
-  latitude: string;
-  longitude: string;
   isFeatured: boolean;
   images: string[];
-  localImages: string[];
 }
 
-const INITIAL_FORM: FormState = {
-  title: "",
-  description: "",
-  price: "",
-  type: "apartment",
-  bedrooms: 1,
-  bathrooms: 1,
-  areaSqft: "",
-  address: "",
-  city: "",
-  latitude: "",
-  longitude: "",
-  isFeatured: false,
-  images: [],
-  localImages: [],
-};
-
-export default function CreatePropertyScreen() {
+export default function EditPropertyScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
   const { user } = useUser();
-  const authSupabase = useSupabase();
+  const supabase = useSupabase();
   const { showNotification } = useInAppNotification();
   const { theme } = useTheme();
 
-  const [form, setForm] = useState<FormState>(INITIAL_FORM);
-
-  // Loading states
+  const [form, setForm] = useState<FormState | null>(null);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
-  const [detectingLocation, setDetectingLocation] = useState(false);
-  const [showMapPicker, setShowMapPicker] = useState(false);
-  const [tempCoords, setTempCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [showImagePicker, setShowImagePicker] = useState(false);
+
+  useEffect(() => {
+    fetchProperty();
+  }, [id]);
+
+  const fetchProperty = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setForm({
+          title: data.title || "",
+          description: data.description || "",
+          price: data.price ? String(data.price) : "",
+          type: (data.type as PropertyType) || "apartment",
+          bedrooms: data.bedrooms || 1,
+          bathrooms: data.bathrooms || 1,
+          areaSqft: data.area_sqft ? String(data.area_sqft) : "",
+          address: data.address || "",
+          city: data.city || "",
+          isFeatured: data.is_featured || false,
+          images: data.images || [],
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching property:", err);
+      Alert.alert("Error", "Could not fetch property details.");
+      router.back();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const updateForm = (fields: Partial<FormState>) =>
-    setForm((prev) => ({ ...prev, ...fields }));
+    setForm((prev) => (prev ? { ...prev, ...fields } : null));
 
   const inputClass = "border rounded-2xl px-4 py-3 outline-none";
   const labelClass = "text-sm font-semibold mb-1.5";
 
-  const [showImagePicker, setShowImagePicker] = useState(false);
-
   const processImageResult = async (result: any) => {
     if (result.canceled) return;
     const uris = result.assets.map((asset: any) => asset.uri);
-    updateForm({
-      images: [...form.images, ...uris],
-      localImages: [...form.localImages, ...uris],
-    });
+    if (form) {
+      updateForm({ images: [...form.images, ...uris] });
+    }
   };
 
   const handleChooseFromGallery = async () => {
@@ -112,25 +123,9 @@ export default function CreatePropertyScreen() {
           mediaTypes: ["images"],
           allowsMultipleSelection: true,
           quality: 0.7,
-          selectionLimit: 6 - form.localImages.length,
+          selectionLimit: 6 - (form?.images?.length || 0),
         });
         await processImageResult(result);
-      } else {
-        if (typeof document !== "undefined") {
-          const input = document.createElement("input");
-          input.type = "file";
-          input.accept = "image/*";
-          input.multiple = true;
-          input.onchange = (e: any) => {
-            const files = Array.from(e.target.files || []);
-            const uris = files.map((file: any) => URL.createObjectURL(file));
-            updateForm({
-              images: [...form.images, ...uris],
-              localImages: [...form.localImages, ...uris],
-            });
-          };
-          input.click();
-        }
       }
     } catch (err) {
       console.error("Gallery picker error:", err);
@@ -162,64 +157,18 @@ export default function CreatePropertyScreen() {
   };
 
   const handleRemoveImage = (index: number) => {
-    updateForm({
-      images: form.images.filter((_, i) => i !== index),
-      localImages: form.localImages.filter((_, i) => i !== index),
-    });
-  };
-
-  // ─── Location Detection ────────────────────────────────────
-  const handleDetectLocation = async () => {
-    setDetectingLocation(true);
-    try {
-      if (Platform.OS === "web" && typeof navigator !== "undefined" && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            updateForm({
-              latitude: String(position.coords.latitude),
-              longitude: String(position.coords.longitude),
-            });
-            setDetectingLocation(false);
-          },
-          () => {
-            Alert.alert("Error", "Could not detect location. Enter manually.");
-            setDetectingLocation(false);
-          }
-        );
-        return;
-      }
-
-      const Location = require("expo-location");
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission Denied",
-          "Location permission is required to detect coordinates."
-        );
-        setDetectingLocation(false);
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
+    if (form) {
       updateForm({
-        latitude: String(location.coords.latitude),
-        longitude: String(location.coords.longitude),
+        images: form.images.filter((_, i) => i !== index),
       });
-    } catch (err) {
-      Alert.alert("Error", "Could not detect location. Enter manually.");
-    } finally {
-      setDetectingLocation(false);
     }
   };
 
-  // ─── Submit ────────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (!form) return;
+
     if (!form.title.trim())
       return Alert.alert("Validation", "Title is required.");
-
     if (!form.price.trim())
       return Alert.alert("Validation", "Price is required.");
 
@@ -242,57 +191,44 @@ export default function CreatePropertyScreen() {
     setSubmitting(true);
 
     try {
-      const { error } = await authSupabase.from("properties").insert({
-        owner_clerk_id: user?.id || null,
-        title: form.title.trim(),
-        description: form.description.trim(),
-        price: priceNum,
-        type: form.type,
-        bedrooms: form.bedrooms,
-        bathrooms: form.bathrooms,
-        area_sqft: form.areaSqft ? Number(form.areaSqft) : null,
-        address: form.address.trim(),
-        city: form.city.trim(),
-        latitude: form.latitude ? Number(form.latitude) : 17.4065,
-        longitude: form.longitude ? Number(form.longitude) : 78.4772,
-        images: form.images,
-        is_featured: form.isFeatured,
-        is_sold: false,
-      });
+      const { error } = await supabase
+        .from("properties")
+        .update({
+          title: form.title.trim(),
+          description: form.description.trim(),
+          price: priceNum,
+          type: form.type,
+          bedrooms: form.bedrooms,
+          bathrooms: form.bathrooms,
+          area_sqft: form.areaSqft ? Number(form.areaSqft) : null,
+          address: form.address.trim(),
+          city: form.city.trim(),
+          is_featured: form.isFeatured,
+          images: form.images,
+        })
+        .eq("id", id)
+        .eq("owner_clerk_id", user?.id);
 
-      if (error) {
-        console.error("Supabase insert error:", error);
-        showNotification({
-          title: "Failed to List",
-          body: error.message || "Something went wrong. Please try again.",
-          type: "error",
-        });
-        setSubmitting(false);
-        return;
-      }
+      if (error) throw error;
+
+      showNotification({
+        title: "Updated Successfully",
+        body: "Your property has been updated.",
+        type: "success",
+      });
+      router.back();
     } catch (e) {
       console.error("Submit error:", e);
       showNotification({
         title: "Error",
-        body: "Could not create property. Check your connection.",
+        body: "Could not update property.",
         type: "error",
       });
-      setSubmitting(false);
-      return;
     } finally {
       setSubmitting(false);
     }
-
-    setForm(INITIAL_FORM);
-    showNotification({
-      title: "Listed Successfully",
-      body: "Your property is now live on Kribb.",
-      type: "success",
-    });
-    router.replace("/(root)/(tabs)/home");
   };
 
-  // ─── UI Helpers ────────────────────────────────────────────
   const Counter = ({
     label,
     value,
@@ -366,6 +302,14 @@ export default function CreatePropertyScreen() {
     </TouchableOpacity>
   );
 
+  if (loading || !form) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg, alignItems: "center", justifyContent: "center" }}>
+        <CustomSpinner size={40} color={theme.textMuted} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
       <KeyboardAvoidingView
@@ -373,9 +317,12 @@ export default function CreatePropertyScreen() {
         className="flex-1"
       >
         {/* Header */}
-        <View className="flex-row items-center px-5 pt-4 pb-3">
-          <Text style={{ color: theme.text }} className="text-2xl font-semibold flex-1">
-            Add Property
+        <View style={{ borderBottomColor: theme.cardBorder }} className="flex-row items-center px-4 py-3 border-b">
+          <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </TouchableOpacity>
+          <Text style={{ color: theme.text }} className="text-lg font-bold ml-2">
+            Edit Property
           </Text>
         </View>
 
@@ -391,8 +338,8 @@ export default function CreatePropertyScreen() {
               <Text style={{ color: theme.textMuted }} className="font-normal">(up to 6)</Text>
             </Text>
 
-            <View className="flex-row flex-wrap gap-3">
-              {form.localImages.map((uri, index) => (
+            <View className="flex-row flex-wrap gap-3 mt-2">
+              {form.images.map((uri, index) => (
                 <View key={index} className="relative">
                   <Image
                     source={{ uri }}
@@ -415,7 +362,7 @@ export default function CreatePropertyScreen() {
                 </View>
               ))}
 
-              {form.localImages.length < 6 && (
+              {form.images.length < 6 && (
                 <TouchableOpacity
                   onPress={() => setShowImagePicker(true)}
                   disabled={uploadingImages}
@@ -478,9 +425,6 @@ export default function CreatePropertyScreen() {
               onChangeText={(v) => updateForm({ price: v })}
               keyboardType="numeric"
             />
-            <Text style={{ color: theme.textMuted }} className="text-xs mt-1.5 ml-1">
-              Valid range: ₹1 – ₹{MAX_PRICE.toLocaleString("en-IN")}
-            </Text>
           </View>
 
           {/* Property Type */}
@@ -560,65 +504,6 @@ export default function CreatePropertyScreen() {
             />
           </View>
 
-          {/* Coordinates */}
-          <View className={sectionClass}>
-            <View className="flex-row items-center justify-between mb-1.5">
-              <Text style={{ color: theme.textSecondary }} className={labelClass}>Coordinates</Text>
-              <View className="flex-row items-center gap-2">
-                <TouchableOpacity
-                  onPress={() => {
-                    setTempCoords({ lat: Number(form.latitude) || 19.0760, lng: Number(form.longitude) || 72.8777 });
-                    setShowMapPicker(true);
-                  }}
-                  style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, borderWidth: 1 }}
-                  className="w-8 h-8 rounded-full items-center justify-center"
-                >
-                  <Ionicons name="map-outline" size={16} color={theme.text} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleDetectLocation}
-                  disabled={detectingLocation}
-                  style={{ backgroundColor: theme.accentLight }}
-                  className="flex-row items-center gap-1 px-3 py-1.5 rounded-full"
-                >
-                  {detectingLocation ? (
-                    <CustomSpinner size={14} color={theme.accent} />
-                  ) : (
-                    <Ionicons name="locate-outline" size={13} color={theme.accent} />
-                  )}
-                  <Text style={{ color: theme.accent }} className="text-xs font-semibold">
-                    {detectingLocation ? "Detecting..." : "Detect Location"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <TextInput
-                  className={inputClass}
-                  style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
-                  placeholder="Latitude"
-                  placeholderTextColor={theme.textMuted}
-                  value={form.latitude}
-                  onChangeText={(v) => updateForm({ latitude: v })}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View className="flex-1">
-                <TextInput
-                  className={inputClass}
-                  style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
-                  placeholder="Longitude"
-                  placeholderTextColor={theme.textMuted}
-                  value={form.longitude}
-                  onChangeText={(v) => updateForm({ longitude: v })}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-          </View>
-
           {/* Toggles */}
           <View className="gap-3 mb-5">
             <Toggle
@@ -632,109 +517,27 @@ export default function CreatePropertyScreen() {
           {/* Submit */}
           <TouchableOpacity
             onPress={handleSubmit}
-            disabled={submitting || uploadingImages}
-            style={{ backgroundColor: theme.accent, opacity: submitting || uploadingImages ? 0.7 : 1 }}
+            disabled={submitting}
+            style={{ backgroundColor: theme.accent, opacity: submitting ? 0.7 : 1 }}
             className="rounded-2xl py-4 items-center"
           >
             {submitting ? (
               <CustomSpinner size={24} color="#ffffff" />
             ) : (
               <Text className="text-white font-bold text-base">
-                List Property
+                Update Property
               </Text>
             )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Map Picker Modal */}
-      <Modal
-        visible={showMapPicker}
-        animationType="slide"
-        onRequestClose={() => setShowMapPicker(false)}
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
-          <View style={{ borderBottomColor: theme.cardBorder }} className="flex-row items-center justify-between px-4 py-3 border-b">
-            <TouchableOpacity onPress={() => setShowMapPicker(false)}>
-              <Text style={{ color: theme.textMuted }} className="font-semibold text-base">Cancel</Text>
-            </TouchableOpacity>
-            <Text style={{ color: theme.text }} className="font-bold text-lg">Pick Location</Text>
-            <TouchableOpacity onPress={() => {
-              if (tempCoords) {
-                updateForm({
-                  latitude: String(tempCoords.lat),
-                  longitude: String(tempCoords.lng)
-                });
-              }
-              setShowMapPicker(false);
-            }}>
-              <Text style={{ color: theme.accent }} className="font-semibold text-base">Done</Text>
-            </TouchableOpacity>
-          </View>
-          <View className="flex-1">
-            <WebView
-              source={{
-                html: `
-                  <!DOCTYPE html>
-                  <html>
-                  <head>
-                      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-                      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-                      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-                      <style>body { padding: 0; margin: 0; } html, body, #map { height: 100%; width: 100vw; }</style>
-                  </head>
-                  <body>
-                      <div id="map"></div>
-                      <script>
-                          var initialLat = ${form.latitude || 19.0760};
-                          var initialLng = ${form.longitude || 72.8777};
-                          var map = L.map('map').setView([initialLat, initialLng], 12);
-                          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '© OpenStreetMap contributors'
-                          }).addTo(map);
-                          var marker = L.marker([initialLat, initialLng], {draggable: true}).addTo(map);
-                          
-                          function sendCoords(lat, lng) {
-                              window.ReactNativeWebView.postMessage(JSON.stringify({lat: lat, lng: lng}));
-                          }
-                          
-                          marker.on('dragend', function (e) {
-                              var coords = e.target.getLatLng();
-                              sendCoords(coords.lat, coords.lng);
-                          });
-                          
-                          map.on('click', function(e) {
-                              marker.setLatLng(e.latlng);
-                              sendCoords(e.latlng.lat, e.latlng.lng);
-                          });
-                      </script>
-                  </body>
-                  </html>
-                `
-              }}
-              onMessage={(event) => {
-                try {
-                  const data = JSON.parse(event.nativeEvent.data);
-                  setTempCoords(data);
-                } catch(e) {}
-              }}
-              javaScriptEnabled={true}
-              scrollEnabled={false}
-              style={{ flex: 1 }}
-            />
-          </View>
-          <View style={{ backgroundColor: theme.bg }} className="p-4 items-center">
-            <Text style={{ color: theme.textMuted }}>Tap anywhere on the map or drag the marker.</Text>
-          </View>
-        </SafeAreaView>
-      </Modal>
-
       <ImagePickerModal
         visible={showImagePicker}
         onClose={() => setShowImagePicker(false)}
         onTakeAction={handleTakePhoto}
         onChooseAction={handleChooseFromGallery}
-        title="Add Property Photos"
+        title="Edit Property Photos"
       />
     </SafeAreaView>
   );

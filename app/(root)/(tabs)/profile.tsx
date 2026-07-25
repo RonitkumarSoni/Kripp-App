@@ -11,9 +11,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomSpinner from "../../../components/CustomSpinner";
+import ImagePickerModal from "../../../components/ImagePickerModal";
 import { useTheme } from "../../../context/ThemeContext";
 
 export default function ProfileScreen() {
@@ -22,6 +24,8 @@ export default function ProfileScreen() {
   const router = useRouter();
   const [isUpdating, setIsUpdating] = useState(false);
   const { theme } = useTheme();
+
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -32,21 +36,35 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleUpdateProfileImage = async () => {
+  const processImageResult = async (result: any) => {
+    if (result.canceled || !result.assets?.[0]) return;
+    setIsUpdating(true);
+    try {
+      const asset = result.assets[0];
+      if (asset.base64) {
+        const filename = asset.uri.split("/").pop() || "profile.jpg";
+        const match = /\.(\w+)$/.exec(filename);
+        const mimeType = match ? `image/${match[1]}` : "image/jpeg";
+        const dataUrl = `data:${mimeType};base64,${asset.base64}`;
+        await user?.setProfileImage({ file: dataUrl });
+      }
+      Alert.alert("Success", "Profile picture updated successfully!");
+    } catch (error) {
+      console.error("Error setting profile image:", error);
+      Alert.alert("Error", "Failed to update profile picture.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleChooseFromGallery = async () => {
     try {
       if (Platform.OS !== "web") {
-        const ImagePicker = require("expo-image-picker");
-        const permissionResult =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
-
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permissionResult.granted) {
-          Alert.alert(
-            "Permission Required",
-            "Please allow access to your photo library to update your profile picture."
-          );
+          Alert.alert("Permission Required", "Please allow access to your photo library.");
           return;
         }
-
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ["images"],
           allowsEditing: true,
@@ -54,21 +72,7 @@ export default function ProfileScreen() {
           quality: 0.8,
           base64: true,
         });
-
-        if (result.canceled || !result.assets?.[0]) return;
-
-        setIsUpdating(true);
-
-        const asset = result.assets[0];
-        if (asset.base64) {
-          const filename = asset.uri.split("/").pop() || "profile.jpg";
-          const match = /\.(\w+)$/.exec(filename);
-          const mimeType = match ? `image/${match[1]}` : "image/jpeg";
-          const dataUrl = `data:${mimeType};base64,${asset.base64}`;
-          await user?.setProfileImage({ file: dataUrl });
-        }
-
-        Alert.alert("Success", "Profile picture updated successfully!");
+        await processImageResult(result);
       } else {
         if (typeof document !== "undefined") {
           const input = document.createElement("input");
@@ -79,8 +83,13 @@ export default function ProfileScreen() {
             if (file) {
               const reader = new FileReader();
               reader.onload = async (event: any) => {
-                const dataUrl = event.target.result;
-                await user?.setProfileImage({ file: dataUrl });
+                setIsUpdating(true);
+                try {
+                  const dataUrl = event.target.result;
+                  await user?.setProfileImage({ file: dataUrl });
+                } finally {
+                  setIsUpdating(false);
+                }
               };
               reader.readAsDataURL(file);
             }
@@ -89,12 +98,30 @@ export default function ProfileScreen() {
         }
       }
     } catch (error) {
-      console.error("Error updating profile image:", error);
-      Alert.alert(
-        "Error",
-        "Failed to update profile picture. Please try again."
-      );
-    } finally {
+      console.error("Gallery picker error:", error);
+      setIsUpdating(false);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      if (Platform.OS !== "web") {
+        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permissionResult.granted) {
+          Alert.alert("Permission Required", "Please allow access to your camera.");
+          return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ["images"],
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+          base64: true,
+        });
+        await processImageResult(result);
+      }
+    } catch (error) {
+      console.error("Camera picker error:", error);
       setIsUpdating(false);
     }
   };
@@ -117,7 +144,7 @@ export default function ProfileScreen() {
             style={{ width: 96, height: 96, borderRadius: 48 }}
           />
           <TouchableOpacity
-            onPress={handleUpdateProfileImage}
+            onPress={() => setShowImagePicker(true)}
             disabled={isUpdating}
             style={{ backgroundColor: theme.accent }}
             className="absolute bottom-1 right-0 rounded-full p-2"
@@ -139,6 +166,12 @@ export default function ProfileScreen() {
 
       {/* Menu Items */}
       <View className="px-6 gap-2">
+        <MenuItem
+          icon="business-outline"
+          label="My Properties"
+          onPress={() => router.push("/(root)/my-properties")}
+          theme={theme}
+        />
         <MenuItem
           icon="heart-outline"
           label="Saved Properties"
@@ -180,6 +213,14 @@ export default function ProfileScreen() {
           <Text className="text-red-500 font-semibold text-base">Sign Out</Text>
         </TouchableOpacity>
       </View>
+
+      <ImagePickerModal
+        visible={showImagePicker}
+        onClose={() => setShowImagePicker(false)}
+        onTakeAction={handleTakePhoto}
+        onChooseAction={handleChooseFromGallery}
+        title="Profile Photo"
+      />
     </SafeAreaView>
   );
 }

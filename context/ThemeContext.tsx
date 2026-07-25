@@ -67,7 +67,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
       if (val !== null) {
         setIsDark(val === "dark");
       } else {
-        setIsDark(systemScheme === "dark");
+        setIsDark(false); // Default to light theme for new users
       }
     });
   }, []);
