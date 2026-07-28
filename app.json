@@ -45,6 +45,12 @@
           "photosPermission": "The app accesses your photos to let you share them with others.",
           "cameraPermission": "The app accesses your camera to let you take photos for your properties and profile."
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Kribb to use Face ID for quick sign-in."
+        }
       ]
     ],
     "experiments": {

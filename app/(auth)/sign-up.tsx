@@ -1,8 +1,9 @@
 import { useSignUp, useSignIn, useAuth } from '@clerk/clerk-expo';
 import { Link, useRouter, Redirect } from 'expo-router';
-import React, { useState } from 'react';
-import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Image, ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import CustomSpinner from '../../components/CustomSpinner';
+import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 
 export default function SignUp() {
     const { isLoaded, signUp, setActive } = useSignUp();
@@ -18,6 +19,16 @@ export default function SignUp() {
     const [code, setCode] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
     const [submitting, setSubmitting] = useState(false);
+
+    // Google OAuth
+    const { signInWithGoogle, loading: googleLoading, error: googleError } = useGoogleAuth();
+
+    // Show Google OAuth errors
+    useEffect(() => {
+        if (googleError) {
+            setErrorMsg(googleError);
+        }
+    }, [googleError]);
 
     if (isAuthLoaded && isSignedIn) {
         return <Redirect href="/(root)/(tabs)/home" />;
@@ -224,6 +235,35 @@ export default function SignUp() {
                 <Text className="text-base text-gray-500 mb-8">
                     Find your dream home today
                 </Text>
+
+                {/* Google Sign-Up Button */}
+                <TouchableOpacity
+                    onPress={signInWithGoogle}
+                    disabled={googleLoading}
+                    className="flex-row items-center justify-center bg-white border border-gray-300 rounded-lg py-3.5 mb-6"
+                    style={{ opacity: googleLoading ? 0.6 : 1 }}
+                >
+                    {googleLoading ? (
+                        <ActivityIndicator color="#4285F4" />
+                    ) : (
+                        <>
+                            <Image
+                                source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+                                style={{ width: 20, height: 20, marginRight: 12 }}
+                            />
+                            <Text className="text-gray-700 font-semibold text-base">
+                                Continue with Google
+                            </Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+
+                {/* Divider */}
+                <View className="flex-row items-center mb-6">
+                    <View className="flex-1 h-px bg-gray-200" />
+                    <Text className="mx-4 text-gray-400 text-sm">or</Text>
+                    <View className="flex-1 h-px bg-gray-200" />
+                </View>
 
                 <View className="mb-6">
                     <View className="flex-row mb-4">

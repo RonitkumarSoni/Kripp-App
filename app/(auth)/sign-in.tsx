@@ -1,7 +1,10 @@
 import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSignIn, useAuth } from '@clerk/clerk-expo';
 import { Link, useRouter, Redirect } from 'expo-router';
+import { useGoogleAuth } from '../../hooks/useGoogleAuth';
+import { useBiometricAuth } from '../../hooks/useBiometricAuth';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SignIn() {
     const { signIn, setActive, isLoaded: isSignInLoaded } = useSignIn();
@@ -12,6 +15,30 @@ export default function SignIn() {
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+
+    // Google OAuth
+    const { signInWithGoogle, loading: googleLoading, error: googleError } = useGoogleAuth();
+
+    // Biometric Auth
+    const { authenticate, checkBiometricSupport, loading: biometricLoading } = useBiometricAuth();
+    const [biometricAvailable, setBiometricAvailable] = useState(false);
+    const [biometricType, setBiometricType] = useState<'fingerprint' | 'facial' | 'iris' | 'none'>('none');
+
+    useEffect(() => {
+        const checkBiometric = async () => {
+            const support = await checkBiometricSupport();
+            setBiometricAvailable(support.isSupported && support.isEnrolled);
+            setBiometricType(support.biometricType);
+        };
+        checkBiometric();
+    }, []);
+
+    // Show Google OAuth errors
+    useEffect(() => {
+        if (googleError) {
+            setErrorMsg(googleError);
+        }
+    }, [googleError]);
 
     if (isAuthLoaded && isSignedIn) {
         return <Redirect href="/(root)/(tabs)/home" />;
@@ -72,6 +99,33 @@ export default function SignIn() {
         }
     };
 
+    const onBiometricPress = async () => {
+        setErrorMsg("");
+        const result = await authenticate('Sign in to Kribb');
+        if (result.success) {
+            // Biometric success — if user has an active session, route to home
+            // Biometric only verifies device-level identity, so user must have been
+            // previously signed in via Clerk for this to work
+            if (isSignedIn) {
+                router.replace('/(root)/(tabs)/home');
+            } else {
+                setErrorMsg("Please sign in with your email first, then use biometrics next time.");
+            }
+        } else if (result.error && result.error !== 'Authentication cancelled.') {
+            setErrorMsg(result.error);
+        }
+    };
+
+    const getBiometricIcon = () => {
+        if (biometricType === 'facial') return 'scan-outline';
+        return 'finger-print-outline';
+    };
+
+    const getBiometricLabel = () => {
+        if (biometricType === 'facial') return 'Face ID';
+        return 'Fingerprint';
+    };
+
     return (
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="bg-white" keyboardShouldPersistTaps="handled">
             <View className="flex-1 items-center justify-center">
@@ -89,6 +143,35 @@ export default function SignIn() {
                 <Text className="text-base text-gray-500 mb-8">
                     Sign in to your account
                 </Text>
+
+                {/* Google Sign-In Button */}
+                <TouchableOpacity
+                    onPress={signInWithGoogle}
+                    disabled={googleLoading}
+                    className="flex-row items-center justify-center bg-white border border-gray-300 rounded-lg py-3.5 mb-6"
+                    style={{ opacity: googleLoading ? 0.6 : 1 }}
+                >
+                    {googleLoading ? (
+                        <ActivityIndicator color="#4285F4" />
+                    ) : (
+                        <>
+                            <Image
+                                source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+                                style={{ width: 20, height: 20, marginRight: 12 }}
+                            />
+                            <Text className="text-gray-700 font-semibold text-base">
+                                Continue with Google
+                            </Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+
+                {/* Divider */}
+                <View className="flex-row items-center mb-6">
+                    <View className="flex-1 h-px bg-gray-200" />
+                    <Text className="mx-4 text-gray-400 text-sm">or</Text>
+                    <View className="flex-1 h-px bg-gray-200" />
+                </View>
 
                 <View className="mb-6">
                     <TextInput 
@@ -133,6 +216,32 @@ export default function SignIn() {
                         <Text className="text-white font-semibold text-base">Sign In</Text>
                     )}
                 </TouchableOpacity>
+
+                {/* Biometric Sign-In Button */}
+                {biometricAvailable && (
+                    <TouchableOpacity
+                        onPress={onBiometricPress}
+                        disabled={biometricLoading}
+                        className="flex-row items-center justify-center bg-gray-50 border border-gray-200 rounded-lg py-3.5 mt-4"
+                        style={{ opacity: biometricLoading ? 0.6 : 1 }}
+                    >
+                        {biometricLoading ? (
+                            <ActivityIndicator color="#4B5563" />
+                        ) : (
+                            <>
+                                <Ionicons 
+                                    name={getBiometricIcon() as any} 
+                                    size={22} 
+                                    color="#4B5563" 
+                                    style={{ marginRight: 10 }} 
+                                />
+                                <Text className="text-gray-700 font-semibold text-base">
+                                    Sign in with {getBiometricLabel()}
+                                </Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+                )}
 
                 <View className="flex-row justify-center mt-6">
                     <Text className="text-gray-500 text-base">Don't have an account? </Text>
