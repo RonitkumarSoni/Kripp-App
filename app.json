@@ -4,7 +4,7 @@
     "slug": "Kribb",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/kribb.png",
+    "icon": "./assets/images/favicon-removebg-preview.png",
     "scheme": "kribb",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -33,7 +33,7 @@
       ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/kribb.png"
+        "foregroundImage": "./assets/images/favicon-removebg-preview.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
