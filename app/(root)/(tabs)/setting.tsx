@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import CustomSpinner from "../../../components/CustomSpinner";
 import { useTheme } from "../../../context/ThemeContext";
+import { MESSAGES } from "../../../constants/messages";
 
 export default function SettingsScreen() {
   const { user, isLoaded } = useUser();
@@ -33,7 +34,7 @@ export default function SettingsScreen() {
   };
 
   const handleUnderConstruction = (feature: string) => {
-    Alert.alert("Info", `${feature} settings will be synced with your device preferences.`);
+    Alert.alert("Info", MESSAGES.GENERAL.UNDER_CONSTRUCTION(feature));
   };
 
   if (!isLoaded || !user) {

@@ -21,6 +21,7 @@ import ImagePickerModal from "../../../components/ImagePickerModal";
 import { useSupabase } from "../../../hooks/useSupabase";
 import { useInAppNotification } from "../../../context/NotificationContext";
 import { useTheme } from "../../../context/ThemeContext";
+import { MESSAGES } from "../../../constants/messages";
 
 const TYPES = ["apartment", "house", "villa", "studio"] as const;
 type PropertyType = (typeof TYPES)[number];
@@ -113,9 +114,11 @@ export default function EditPropertyScreen() {
   const handleChooseFromGallery = async () => {
     try {
       if (Platform.OS !== "web") {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permission.granted) {
-          Alert.alert("Permission Required", "Please allow access to your photo library.");
+        const { status, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          if (canAskAgain) {
+            Alert.alert("Permission Required", MESSAGES.PERMISSIONS.GALLERY_REQUIRED);
+          }
           return;
         }
         setUploadingImages(true);
@@ -137,9 +140,11 @@ export default function EditPropertyScreen() {
   const handleTakePhoto = async () => {
     try {
       if (Platform.OS !== "web") {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-        if (!permission.granted) {
-          Alert.alert("Permission Required", "Please allow access to your device camera.");
+        const { status, canAskAgain } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== "granted") {
+          if (canAskAgain) {
+            Alert.alert("Permission Required", MESSAGES.PERMISSIONS.CAMERA_REQUIRED);
+          }
           return;
         }
         setUploadingImages(true);
@@ -168,25 +173,22 @@ export default function EditPropertyScreen() {
     if (!form) return;
 
     if (!form.title.trim())
-      return Alert.alert("Validation", "Title is required.");
+      return Alert.alert("Validation", MESSAGES.VALIDATION.TITLE_REQUIRED);
     if (!form.price.trim())
-      return Alert.alert("Validation", "Price is required.");
+      return Alert.alert("Validation", MESSAGES.VALIDATION.PRICE_REQUIRED);
 
-    const priceNum = Number(form.price);
-    if (isNaN(priceNum) || priceNum < MIN_PRICE)
-      return Alert.alert("Validation", "Price must be greater than ₹0.");
-    if (priceNum > MAX_PRICE)
-      return Alert.alert(
-        "Validation",
-        `Price cannot exceed ₹${MAX_PRICE.toLocaleString("en-IN")}.`
-      );
+    const numPrice = Number(form.price);
+    if (isNaN(numPrice) || numPrice < MIN_PRICE)
+      return Alert.alert("Validation", MESSAGES.VALIDATION.PRICE_MIN);
+    if (numPrice > MAX_PRICE)
+      return Alert.alert("Validation", MESSAGES.VALIDATION.PRICE_MAX(MAX_PRICE));
 
     if (!form.address.trim())
-      return Alert.alert("Validation", "Address is required.");
+      return Alert.alert("Validation", MESSAGES.VALIDATION.ADDRESS_REQUIRED);
     if (!form.city.trim())
-      return Alert.alert("Validation", "City is required.");
+      return Alert.alert("Validation", MESSAGES.VALIDATION.CITY_REQUIRED);
     if (form.images.length === 0)
-      return Alert.alert("Validation", "Please upload at least one image.");
+      return Alert.alert("Validation", MESSAGES.VALIDATION.IMAGE_REQUIRED);
 
     setSubmitting(true);
 
@@ -196,7 +198,7 @@ export default function EditPropertyScreen() {
         .update({
           title: form.title.trim(),
           description: form.description.trim(),
-          price: priceNum,
+          price: numPrice,
           type: form.type,
           bedrooms: form.bedrooms,
           bathrooms: form.bathrooms,
@@ -213,7 +215,7 @@ export default function EditPropertyScreen() {
 
       showNotification({
         title: "Updated Successfully",
-        body: "Your property has been updated.",
+        body: MESSAGES.PROPERTY.UPDATE_SUCCESS,
         type: "success",
       });
       router.back();
@@ -221,7 +223,7 @@ export default function EditPropertyScreen() {
       console.error("Submit error:", e);
       showNotification({
         title: "Error",
-        body: "Could not update property.",
+        body: MESSAGES.PROPERTY.UPDATE_ERROR,
         type: "error",
       });
     } finally {

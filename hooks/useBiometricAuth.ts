@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Platform } from 'react-native';
+import { MESSAGES } from '../constants/messages';
 
 export type BiometricType = 'fingerprint' | 'facial' | 'iris' | 'none';
 
@@ -70,19 +71,19 @@ export const useBiometricAuth = () => {
       const support = await checkBiometricSupport();
 
       if (!support.isSupported) {
-        const errMsg = 'Biometric authentication is not supported on this device.';
+        const errMsg = MESSAGES.AUTH.BIOMETRIC_NOT_SUPPORTED;
         setError(errMsg);
         return { success: false, error: errMsg };
       }
 
       if (!support.isEnrolled) {
-        const errMsg = 'No biometrics enrolled. Please set up fingerprint or face lock in your device settings.';
+        const errMsg = MESSAGES.AUTH.BIOMETRIC_NOT_ENROLLED;
         setError(errMsg);
         return { success: false, error: errMsg };
       }
 
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: promptMessage || 'Sign in to Kribb',
+        promptMessage: promptMessage || MESSAGES.AUTH.BIOMETRIC_PROMPT,
         cancelLabel: 'Cancel',
         disableDeviceFallback: false, // Allow PIN/pattern as fallback
         fallbackLabel: 'Use Passcode',
@@ -93,15 +94,15 @@ export const useBiometricAuth = () => {
         return { success: true };
       } else {
         const errMsg = result.error === 'user_cancel' 
-          ? 'Authentication cancelled.' 
+          ? MESSAGES.AUTH.BIOMETRIC_CANCELLED 
           : result.error === 'user_fallback'
-          ? 'Fallback authentication selected.'
-          : 'Authentication failed. Please try again.';
+          ? MESSAGES.AUTH.BIOMETRIC_FALLBACK
+          : MESSAGES.AUTH.BIOMETRIC_FAILED;
         setError(errMsg);
         return { success: false, error: errMsg };
       }
     } catch (err: any) {
-      const errMsg = err?.message || 'An error occurred during authentication.';
+      const errMsg = err?.message || MESSAGES.GENERAL.ERROR;
       setError(errMsg);
       return { success: false, error: errMsg };
     } finally {

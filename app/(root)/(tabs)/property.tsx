@@ -15,10 +15,12 @@ import {
 
 import CustomSpinner from "../../../components/CustomSpinner";
 import { useSupabase } from "../../../hooks/useSupabase";
+import { useTheme } from "../../../context/ThemeContext";
 
 export default function AddProperty() {
   const { user } = useUser();
   const supabase = useSupabase();
+  const { theme, isDark } = useTheme();
 
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
@@ -107,44 +109,44 @@ export default function AddProperty() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
+      <StatusBar barStyle={theme.statusBarStyle} />
       <ScrollView className="flex-1 px-6 pt-4" showsVerticalScrollIndicator={false}>
         <View className="mb-6">
-          <Text className="text-gray-900 font-semibold text-3xl">Add Property</Text>
-          <Text className="text-gray-400 text-sm mt-1">Admin Panel — Create a new listing</Text>
+          <Text style={{ color: theme.text }} className="font-semibold text-3xl">Add Property</Text>
+          <Text style={{ color: theme.textSecondary }} className="text-sm mt-1">Admin Panel — Create a new listing</Text>
         </View>
 
         {/* Form Fields */}
         <View className="space-y-4 mb-8">
           <View>
-            <Text className="text-gray-700 font-semibold text-sm mb-2">Property Title *</Text>
+            <Text style={{ color: theme.textSecondary }} className="font-semibold text-sm mb-2">Property Title *</Text>
             <TextInput
               placeholder="e.g. Modern Luxury Villa"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={theme.textMuted}
               value={title}
               onChangeText={setTitle}
-              className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-gray-900 text-base"
+              style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+              className="border rounded-2xl px-4 py-3.5 text-base"
             />
           </View>
 
           <View className="mt-4">
-            <Text className="text-gray-700 font-semibold text-sm mb-2">Property Type</Text>
+            <Text style={{ color: theme.textSecondary }} className="font-semibold text-sm mb-2">Property Type</Text>
             <View className="flex-row flex-wrap gap-2">
               {propertyTypes.map((item) => (
                 <TouchableOpacity
                   key={item.value}
                   onPress={() => setType(item.value)}
-                  className={`px-4 py-2.5 rounded-full border ${
-                    type === item.value
-                      ? "bg-blue-600 border-blue-600"
-                      : "bg-gray-50 border-gray-100"
-                  }`}
+                  style={{ 
+                    backgroundColor: type === item.value ? theme.accent : theme.inputBg,
+                    borderColor: type === item.value ? theme.accent : theme.inputBorder
+                  }}
+                  className="px-4 py-2.5 rounded-full border"
                 >
                   <Text
-                    className={`text-sm font-semibold ${
-                      type === item.value ? "text-white" : "text-gray-600"
-                    }`}
+                    style={{ color: type === item.value ? "#fff" : theme.textSecondary }}
+                    className="text-sm font-semibold"
                   >
                     {item.label}
                   </Text>
@@ -154,102 +156,110 @@ export default function AddProperty() {
           </View>
 
           <View className="mt-4">
-            <Text className="text-gray-700 font-semibold text-sm mb-2">Price (₹) *</Text>
+            <Text style={{ color: theme.textSecondary }} className="font-semibold text-sm mb-2">Price (₹) *</Text>
             <TextInput
               placeholder="e.g. 15000000"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={theme.textMuted}
               keyboardType="numeric"
               value={price}
               onChangeText={setPrice}
-              className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-gray-900 text-base"
+              style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+              className="border rounded-2xl px-4 py-3.5 text-base"
             />
           </View>
 
           <View className="flex-row space-x-4 mt-4">
             <View className="flex-1">
-              <Text className="text-gray-700 font-semibold text-sm mb-2">Bedrooms</Text>
-              <View className="flex-row items-center justify-between bg-gray-50 border border-gray-100 rounded-2xl px-3 py-2">
+              <Text style={{ color: theme.textSecondary }} className="font-semibold text-sm mb-2">Bedrooms</Text>
+              <View style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder }} className="flex-row items-center justify-between border rounded-2xl px-3 py-2">
                 <TouchableOpacity
                   onPress={() => setBedrooms(Math.max(1, bedrooms - 1))}
-                  className="p-1.5 bg-white rounded-xl border border-gray-100 shadow-sm"
+                  style={{ backgroundColor: theme.card, borderColor: theme.cardBorder }}
+                  className="p-1.5 rounded-xl border shadow-sm"
                 >
-                  <Ionicons name="remove" size={18} color="#374151" />
+                  <Ionicons name="remove" size={18} color={theme.textSecondary} />
                 </TouchableOpacity>
-                <Text className="text-gray-900 font-semibold text-base">{bedrooms}</Text>
+                <Text style={{ color: theme.text }} className="font-semibold text-base">{bedrooms}</Text>
                 <TouchableOpacity
                   onPress={() => setBedrooms(bedrooms + 1)}
-                  className="p-1.5 bg-white rounded-xl border border-gray-100 shadow-sm"
+                  style={{ backgroundColor: theme.card, borderColor: theme.cardBorder }}
+                  className="p-1.5 rounded-xl border shadow-sm"
                 >
-                  <Ionicons name="add" size={18} color="#374151" />
+                  <Ionicons name="add" size={18} color={theme.textSecondary} />
                 </TouchableOpacity>
               </View>
             </View>
 
             <View className="flex-1 ml-3">
-              <Text className="text-gray-700 font-semibold text-sm mb-2">Bathrooms</Text>
-              <View className="flex-row items-center justify-between bg-gray-50 border border-gray-100 rounded-2xl px-3 py-2">
+              <Text style={{ color: theme.textSecondary }} className="font-semibold text-sm mb-2">Bathrooms</Text>
+              <View style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder }} className="flex-row items-center justify-between border rounded-2xl px-3 py-2">
                 <TouchableOpacity
                   onPress={() => setBathrooms(Math.max(1, bathrooms - 1))}
-                  className="p-1.5 bg-white rounded-xl border border-gray-100 shadow-sm"
+                  style={{ backgroundColor: theme.card, borderColor: theme.cardBorder }}
+                  className="p-1.5 rounded-xl border shadow-sm"
                 >
-                  <Ionicons name="remove" size={18} color="#374151" />
+                  <Ionicons name="remove" size={18} color={theme.textSecondary} />
                 </TouchableOpacity>
-                <Text className="text-gray-900 font-semibold text-base">{bathrooms}</Text>
+                <Text style={{ color: theme.text }} className="font-semibold text-base">{bathrooms}</Text>
                 <TouchableOpacity
                   onPress={() => setBathrooms(bathrooms + 1)}
-                  className="p-1.5 bg-white rounded-xl border border-gray-100 shadow-sm"
+                  style={{ backgroundColor: theme.card, borderColor: theme.cardBorder }}
+                  className="p-1.5 rounded-xl border shadow-sm"
                 >
-                  <Ionicons name="add" size={18} color="#374151" />
+                  <Ionicons name="add" size={18} color={theme.textSecondary} />
                 </TouchableOpacity>
               </View>
             </View>
           </View>
 
           <View className="mt-4">
-            <Text className="text-gray-700 font-semibold text-sm mb-2">Area (sq ft)</Text>
+            <Text style={{ color: theme.textSecondary }} className="font-semibold text-sm mb-2">Area (sq ft)</Text>
             <TextInput
               placeholder="e.g. 1800"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={theme.textMuted}
               keyboardType="numeric"
               value={area}
               onChangeText={setArea}
-              className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-gray-900 text-base"
+              style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+              className="border rounded-2xl px-4 py-3.5 text-base"
             />
           </View>
 
           <View className="mt-4">
-            <Text className="text-gray-700 font-semibold text-sm mb-2">Address *</Text>
+            <Text style={{ color: theme.textSecondary }} className="font-semibold text-sm mb-2">Address *</Text>
             <TextInput
               placeholder="e.g. Road No 36, Jubilee Hills"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={theme.textMuted}
               value={address}
               onChangeText={setAddress}
-              className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-gray-900 text-base"
+              style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+              className="border rounded-2xl px-4 py-3.5 text-base"
             />
           </View>
 
           <View className="mt-4">
-            <Text className="text-gray-700 font-semibold text-sm mb-2">City *</Text>
+            <Text style={{ color: theme.textSecondary }} className="font-semibold text-sm mb-2">City *</Text>
             <TextInput
               placeholder="e.g. Hyderabad"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={theme.textMuted}
               value={city}
               onChangeText={setCity}
-              className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-gray-900 text-base"
+              style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+              className="border rounded-2xl px-4 py-3.5 text-base"
             />
           </View>
 
           <View className="mt-4">
-            <Text className="text-gray-700 font-semibold text-sm mb-2">Description</Text>
+            <Text style={{ color: theme.textSecondary }} className="font-semibold text-sm mb-2">Description</Text>
             <TextInput
               placeholder="Describe property features, view, amenities..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={theme.textMuted}
               multiline
               numberOfLines={4}
               value={description}
               onChangeText={setDescription}
-              className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-gray-900 text-base h-28"
-              style={{ textAlignVertical: "top" }}
+              style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text, textAlignVertical: "top" }}
+              className="border rounded-2xl px-4 py-3.5 text-base h-28"
             />
           </View>
         </View>
@@ -258,7 +268,8 @@ export default function AddProperty() {
         <TouchableOpacity
           onPress={handleAddProperty}
           disabled={loading}
-          className="bg-blue-600 py-4 rounded-2xl items-center mb-12 shadow-md"
+          style={{ backgroundColor: theme.accent }}
+          className="py-4 rounded-2xl items-center mb-12 shadow-md"
         >
           {loading ? (
             <CustomSpinner size={24} color="#ffffff" />

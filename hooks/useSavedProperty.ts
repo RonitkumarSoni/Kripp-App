@@ -3,6 +3,7 @@ import { useUser } from "@clerk/clerk-expo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSupabase } from "./useSupabase";
 import { useInAppNotification } from "../context/NotificationContext";
+import { MESSAGES } from "../constants/messages";
 
 const LOCAL_SAVED_KEY = "kribb_local_saved_properties";
 
@@ -92,7 +93,7 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
           if (onUnsave) onUnsave();
           showNotification({
             title: "Removed from Saved",
-            body: "This property has been unsaved.",
+            body: MESSAGES.PROPERTY.UNSAVE_SUCCESS,
             type: "info",
           });
         } else {
@@ -101,7 +102,7 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
           }
           showNotification({
             title: "Property Saved",
-            body: "Added to your saved collection.",
+            body: MESSAGES.PROPERTY.SAVE_SUCCESS,
             type: "success",
           });
         }
@@ -119,13 +120,13 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
           if (error) {
             console.error("Supabase delete error:", error);
             setIsSaved(prevSaved);
-            return showNotification({ title: "Error", body: "Could not unsave.", type: "error" });
+            return showNotification({ title: "Error", body: MESSAGES.PROPERTY.UNSAVE_ERROR, type: "error" });
           }
             
           if (onUnsave) onUnsave();
           showNotification({
             title: "Removed from Saved",
-            body: "This property has been unsaved.",
+            body: MESSAGES.PROPERTY.UNSAVE_SUCCESS,
             type: "info",
           });
         } else {
@@ -137,12 +138,12 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
           if (error) {
             console.error("Supabase insert error:", error);
             setIsSaved(prevSaved);
-            return showNotification({ title: "Error", body: "Could not save property. Check DB constraints.", type: "error" });
+            return showNotification({ title: "Error", body: MESSAGES.PROPERTY.SAVE_ERROR, type: "error" });
           }
           
           showNotification({
             title: "Property Saved",
-            body: "Added to your saved collection.",
+            body: MESSAGES.PROPERTY.SAVE_SUCCESS,
             type: "success",
           });
         }

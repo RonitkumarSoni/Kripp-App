@@ -1,19 +1,13 @@
 import { Slot, useRouter, useSegments, useRootNavigationState } from "expo-router";
-import { ClerkProvider, ClerkLoaded, useAuth } from '@clerk/clerk-expo';
+import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
+import { Platform, View, Image, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import React, { useEffect } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import "../global.css";
 
-// DOMException polyfill - React Native mein ye nahi hota, Supabase ko chahiye
-if (typeof globalThis.DOMException === 'undefined') {
-  (globalThis as any).DOMException = class DOMException extends Error {
-    constructor(message?: string, name?: string) {
-      super(message);
-      this.name = name || 'DOMException';
-    }
-  };
-}
+// DOMException polyfill is handled in index.js
 
 const createTokenCache = () => {
   return {
@@ -65,6 +59,43 @@ import { ThemeProvider } from "../context/ThemeContext";
 import { useSupabase } from "../hooks/useSupabase";
 import { useUser } from "@clerk/clerk-expo";
 
+// Branded loading screen — shown while Clerk is initializing
+function AppLoadingScreen() {
+  return (
+    <View style={splashStyles.container}>
+      <Image
+        source={require('../assets/images/kribb.png')}
+        style={splashStyles.logo}
+        resizeMode="contain"
+      />
+      <ActivityIndicator size="large" color="#2563EB" style={splashStyles.spinner} />
+      <Text style={splashStyles.tagline}>Finding your dream home...</Text>
+    </View>
+  );
+}
+
+const splashStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 140,
+    height: 56,
+    marginBottom: 32,
+  },
+  spinner: {
+    marginBottom: 16,
+  },
+  tagline: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+});
+
 function InitialLayout() {
   const { isLoaded, isSignedIn } = useAuth();
   const { user: clerkUser } = useUser();
@@ -72,6 +103,11 @@ function InitialLayout() {
   const router = useRouter();
   const rootNavigationState = useRootNavigationState();
   const supabase = useSupabase();
+
+  useEffect(() => {
+    // Hide the native splash screen immediately so our custom branded loading screen is visible
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!isLoaded || !rootNavigationState?.key) return;
@@ -108,9 +144,15 @@ function InitialLayout() {
     }
   }, [isSignedIn, isLoaded, segments, rootNavigationState?.key, clerkUser]);
 
+  // Show branded loading screen while Clerk is initializing
+  if (!isLoaded) {
+    return <AppLoadingScreen />;
+  }
+
   return (
     <ThemeProvider>
       <NotificationProvider>
+        <StatusBar style="auto" />
         <Slot />
       </NotificationProvider>
     </ThemeProvider>
@@ -120,9 +162,7 @@ function InitialLayout() {
 export default function RootLayout() {
   return (
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
-      <ClerkLoaded>
-        <InitialLayout />
-      </ClerkLoaded>
+      <InitialLayout />
     </ClerkProvider>
   );
 }

@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const THEME_KEY = "@kribb_theme";
 
 export const lightTheme = {
-  mode: "light" as const,
+  mode: "light" as "light" | "dark",
   bg: "#F9FAFB",
   card: "#FFFFFF",
   cardBorder: "#F3F4F6",
@@ -19,11 +19,12 @@ export const lightTheme = {
   sectionBg: "#F3F4F6",
   tabBarBg: "rgba(255,255,255,0.96)",
   tabBarBorder: "rgba(0,0,0,0.06)",
-  statusBar: "dark" as const,
+  statusBar: "dark" as "dark" | "light",
+  statusBarStyle: "dark-content" as "dark-content" | "light-content",
 };
 
 export const darkTheme = {
-  mode: "dark" as const,
+  mode: "dark" as "light" | "dark",
   bg: "#000000",
   card: "#1C1C1E",
   cardBorder: "#2C2C2E",
@@ -37,7 +38,8 @@ export const darkTheme = {
   sectionBg: "#2C2C2E",
   tabBarBg: "rgba(28,28,30,0.92)",
   tabBarBorder: "rgba(255,255,255,0.08)",
-  statusBar: "light" as const,
+  statusBar: "light" as "dark" | "light",
+  statusBarStyle: "light-content" as "dark-content" | "light-content",
 };
 
 export type Theme = typeof lightTheme;

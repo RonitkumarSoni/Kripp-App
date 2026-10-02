@@ -17,6 +17,7 @@ import { useTheme } from "../../context/ThemeContext";
 import CustomSpinner from "../../components/CustomSpinner";
 import PropertyCard from "../../components/PropertyCard";
 import { useInAppNotification } from "../../context/NotificationContext";
+import { MESSAGES } from "../../constants/messages";
 
 export default function MyPropertiesScreen() {
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function MyPropertiesScreen() {
       console.error("Error fetching my properties:", err);
       showNotification({
         title: "Error",
-        body: "Failed to fetch your properties",
+        body: MESSAGES.PROPERTY.FETCH_ERROR,
         type: "error",
       });
     } finally {
@@ -60,8 +61,8 @@ export default function MyPropertiesScreen() {
 
   const handleDelete = (id: string) => {
     Alert.alert(
-      "Delete Property",
-      "Are you sure you want to delete this property? This action cannot be undone.",
+      MESSAGES.PROPERTY.DELETE_CONFIRM_TITLE,
+      MESSAGES.PROPERTY.DELETE_CONFIRM_BODY,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -78,8 +79,8 @@ export default function MyPropertiesScreen() {
               if (error) throw error;
 
               showNotification({
-                title: "Success",
-                body: "Property deleted successfully",
+                title: "Deleted",
+                body: MESSAGES.PROPERTY.DELETE_SUCCESS,
                 type: "success",
               });
               
@@ -88,7 +89,7 @@ export default function MyPropertiesScreen() {
               console.error("Error deleting property:", error);
               showNotification({
                 title: "Error",
-                body: "Failed to delete property",
+                body: MESSAGES.PROPERTY.DELETE_ERROR,
                 type: "error",
               });
             }

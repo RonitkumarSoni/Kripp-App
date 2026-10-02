@@ -3,7 +3,7 @@ import { Animated, Text, View, StyleSheet, Dimensions, Platform } from "react-na
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type NotificationType = "info" | "success" | "warning";
+type NotificationType = "info" | "success" | "warning" | "error";
 
 interface NotificationConfig {
   title: string;
@@ -66,12 +66,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     }, 3500);
   };
 
-  const getIcon = (type?: NotificationType) => {
+    const getIcon = (type?: NotificationType) => {
     switch (type) {
       case "success":
         return { name: "checkmark-circle", color: "#10B981" };
       case "warning":
         return { name: "alert-circle", color: "#F59E0B" };
+      case "error":
+        return { name: "close-circle", color: "#EF4444" };
       default:
         return { name: "notifications", color: "#2563EB" };
     }

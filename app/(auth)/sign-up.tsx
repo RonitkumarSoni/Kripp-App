@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Image, ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import CustomSpinner from '../../components/CustomSpinner';
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
+import { MESSAGES } from '../../constants/messages';
+import { clerkErrorMessage } from '../../lib/clerk-errors';
 
 export default function SignUp() {
     const { isLoaded, signUp, setActive } = useSignUp();
@@ -18,6 +20,7 @@ export default function SignUp() {
     const [pendingVerification, setPendingVerification] = useState(false);
     const [code, setCode] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
+    const [successMsg, setSuccessMsg] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
     // Google OAuth
@@ -30,28 +33,32 @@ export default function SignUp() {
         }
     }, [googleError]);
 
-    if (isAuthLoaded && isSignedIn) {
-        return <Redirect href="/(root)/(tabs)/home" />;
-    }
+    // Redirect handled by _layout.tsx based on auth state
+    // if (isAuthLoaded && isSignedIn) {
+    //     return <Redirect href="/(root)/(tabs)/home" />;
+    // }
 
     const parseClerkError = (error: any): string => {
         const errObj = error?.errors?.[0];
-        if (!errObj) return error?.message || "An error occurred during sign up";
+        if (!errObj) {
+            console.error("Auth error:", error);
+            return clerkErrorMessage(error, MESSAGES.GENERAL.ERROR);
+        }
 
         const code = errObj.code;
         const msg = errObj.longMessage || errObj.message || "";
         const param = errObj.meta?.paramName || errObj.paramName || "";
 
         if (code === "form_identifier_exists" || msg.toLowerCase().includes("already exists") || msg.toLowerCase().includes("taken")) {
-            return "An account with this email address already exists. Please Log In.";
+            return MESSAGES.AUTH.ACCOUNT_EXISTS;
         }
 
-        if (param === "email_address" || msg.toLowerCase().includes("email_address")) {
-            return "Please enter a valid email address.";
+        if (code === 'form_param_format_invalid' && param === 'email_address') {
+            return MESSAGES.AUTH.INVALID_EMAIL;
         }
 
-        if (param === "password" || msg.toLowerCase().includes("password")) {
-            return "Password is invalid. Password must be at least 8 characters long.";
+        if (code === 'form_password_length_too_short') {
+            return MESSAGES.AUTH.PASSWORD_LENGTH;
         }
 
         if (param) {
@@ -59,39 +66,44 @@ export default function SignUp() {
             return `${formattedParam.charAt(0).toUpperCase() + formattedParam.slice(1)} ${msg}`;
         }
 
-        return msg || "An error occurred during sign up";
+        return msg || MESSAGES.AUTH.SIGN_UP_ERROR;
     };
 
     const onSignUpPress = async () => {
         if (!isLoaded || submitting) return;
         setSubmitting(true);
         setErrorMsg("");
+        setSuccessMsg("");
 
-        if (!email.trim()) {
-            setErrorMsg("Email address is required.");
+        if (!email || !email.trim()) {
+            setErrorMsg(MESSAGES.AUTH.EMAIL_REQUIRED);
             setSubmitting(false);
             return;
         }
 
         if (!password || password.length < 8) {
-            setErrorMsg("Password must be at least 8 characters long.");
+            setErrorMsg(MESSAGES.AUTH.PASSWORD_LENGTH);
             setSubmitting(false);
             return;
         }
-        
         try {
-            const createAttempt = await signUp.create({
-                emailAddress: email.trim(),
-                password,
-                firstName: firstName.trim() || undefined,
-                lastName: lastName.trim() || undefined,
-            });
+
+            const createData: any = {
+                emailAddress: String(email).trim(),
+                password: String(password),
+            };
+            if (firstName.trim()) createData.firstName = firstName.trim();
+            if (lastName.trim()) createData.lastName = lastName.trim();
+
+            const createAttempt = await signUp.create(createData);
             
             if (createAttempt.status === 'complete' && createAttempt.createdSessionId) {
                 await setActive({ session: createAttempt.createdSessionId });
-                router.replace('/(root)/(tabs)/home');
+                // _layout.tsx will handle the redirect
             } else {
+                console.log("[SignUp] Preparing email verification code...");
                 await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+                console.log("[SignUp] Email verification code sent successfully.");
                 setPendingVerification(true);
             }
         } catch (error: any) {
@@ -105,20 +117,19 @@ export default function SignUp() {
         if (!isLoaded || submitting) return;
         setSubmitting(true);
         setErrorMsg("");
+        setSuccessMsg("");
 
         try {
             const completeSignUp = await signUp.attemptEmailAddressVerification({ code });
 
             if (completeSignUp.status === 'complete' && completeSignUp.createdSessionId) {
                 await setActive({ session: completeSignUp.createdSessionId });
-                router.replace('/(root)/(tabs)/home');
                 return;
             } else if (completeSignUp.createdSessionId) {
                 await setActive({ session: completeSignUp.createdSessionId });
-                router.replace('/(root)/(tabs)/home');
                 return;
             } else {
-                setErrorMsg(`Verification status: ${completeSignUp.status}. Please check your code.`);
+                setErrorMsg(MESSAGES.AUTH.VERIFICATION_FAILED);
             }
         } catch (err: any) {
             const errObj = err?.errors?.[0];
@@ -133,14 +144,12 @@ export default function SignUp() {
             if (isAlreadyVerified) {
                 if (signUp?.createdSessionId) {
                     await setActive({ session: signUp.createdSessionId });
-                    router.replace('/(root)/(tabs)/home');
                     return;
                 } else if (signIn && email && password) {
                     try {
                         const autoLogin = await signIn.create({ identifier: email, password });
                         if (autoLogin.createdSessionId) {
                             await setActive({ session: autoLogin.createdSessionId });
-                            router.replace('/(root)/(tabs)/home');
                             return;
                         }
                     } catch (signInErr) {
@@ -158,14 +167,26 @@ export default function SignUp() {
     };
 
     const onResendCodePress = async () => {
-        if (!isLoaded) return;
+        if (!isLoaded || submitting) return;
+        setSubmitting(true);
         setErrorMsg("");
+        setSuccessMsg("");
+        console.log("[SignUp] Requesting new email verification code...");
         try {
             await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-            setErrorMsg("A new verification code has been sent to your email.");
+            console.log("[SignUp] New code sent.");
+            setSuccessMsg(MESSAGES.AUTH.VERIFICATION_SENT);
             setCode("");
         } catch (error: any) {
-            setErrorMsg(error.errors?.[0]?.message || error.message || "Failed to resend code");
+            console.error("[SignUp] Resend code error:", error);
+            const msg = clerkErrorMessage(error, 'Failed to resend code');
+            if (error.errors?.[0]?.code === "rate_limit_exceeded") {
+                setErrorMsg("Too many requests. Please wait a moment before requesting a new code.");
+            } else {
+                setErrorMsg(msg);
+            }
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -188,6 +209,7 @@ export default function SignUp() {
                     onChangeText={(val) => {
                         setCode(val);
                         if (errorMsg) setErrorMsg("");
+                        if (successMsg) setSuccessMsg("");
                     }}
                     keyboardType="number-pad"
                 />
@@ -195,6 +217,12 @@ export default function SignUp() {
                 {errorMsg ? (
                     <Text className="text-red-500 mb-4 text-sm font-medium">
                         {errorMsg}
+                    </Text>
+                ) : null}
+
+                {successMsg ? (
+                    <Text className="text-green-600 mb-4 text-sm font-medium">
+                        {successMsg}
                     </Text>
                 ) : null}
                 
@@ -210,7 +238,7 @@ export default function SignUp() {
                     )}
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={onResendCodePress}>
+                <TouchableOpacity onPress={onResendCodePress} disabled={submitting}>
                     <Text className="text-blue-600 text-sm font-medium">I need a new code</Text>
                 </TouchableOpacity>
                 </View>
@@ -268,44 +296,59 @@ export default function SignUp() {
                 <View className="mb-6">
                     <View className="flex-row mb-4">
                         <View className="flex-1 pr-2">
-                            <TextInput 
-                                placeholder="First Name" 
-                                placeholderTextColor="#a1a1aa"
-                                autoCapitalize="none"
-                                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:border-gray-300 focus:outline-none" 
-                                value={firstName}
-                                onChangeText={setFirstName}
-                            />
+                            <View className="w-full bg-white border border-gray-300 rounded-lg focus-within:border-gray-400">
+                                <TextInput 
+                                    placeholder="First Name" 
+                                    placeholderTextColor="#a1a1aa"
+                                    autoCapitalize="none"
+                                    className="w-full px-4 py-3 text-sm text-gray-900 bg-transparent focus:outline-none" 
+                                    value={firstName}
+                                    onChangeText={setFirstName}
+                                />
+                            </View>
                         </View>
                         <View className="flex-1 pl-2">
-                            <TextInput 
-                                placeholder="Last Name" 
-                                placeholderTextColor="#a1a1aa"
-                                autoCapitalize="none"
-                                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:border-gray-300 focus:outline-none" 
-                                value={lastName}
-                                onChangeText={setLastName}
-                            />
+                            <View className="w-full bg-white border border-gray-300 rounded-lg focus-within:border-gray-400">
+                                <TextInput 
+                                    placeholder="Last Name" 
+                                    placeholderTextColor="#a1a1aa"
+                                    autoCapitalize="none"
+                                    className="w-full px-4 py-3 text-sm text-gray-900 bg-transparent focus:outline-none" 
+                                    value={lastName}
+                                    onChangeText={setLastName}
+                                />
+                            </View>
                         </View>
                     </View>
 
-                    <TextInput 
-                        placeholder="Email Address" 
-                        placeholderTextColor="#a1a1aa"
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 mb-4 focus:border-gray-300 focus:outline-none" 
-                        value={email}
-                        onChangeText={setEmail}
-                    />
-                    <TextInput 
-                        placeholder="Password" 
-                        placeholderTextColor="#a1a1aa"
-                        secureTextEntry 
-                        className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:border-gray-300 focus:outline-none" 
-                        value={password}
-                        onChangeText={setPassword}
-                    />
+                    <View className="w-full bg-white border border-gray-300 rounded-lg mb-4 focus-within:border-gray-400">
+                        <TextInput 
+                            placeholder="Email Address" 
+                            placeholderTextColor="#a1a1aa"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            className="w-full px-4 py-3 text-sm text-gray-900 bg-transparent focus:outline-none" 
+                            value={email}
+                            onChangeText={(val) => {
+                                setEmail(val);
+                                if (errorMsg) setErrorMsg("");
+                            }}
+                        />
+                    </View>
+
+                    <View className="w-full bg-white border border-gray-300 rounded-lg mb-6 focus-within:border-gray-400">
+                        <TextInput 
+                            placeholder="Password" 
+                            placeholderTextColor="#a1a1aa"
+                            secureTextEntry
+                            className="w-full px-4 py-3 text-sm text-gray-900 bg-transparent focus:outline-none" 
+                            value={password}
+                            onChangeText={(val) => {
+                                setPassword(val);
+                                if (errorMsg) setErrorMsg("");
+                            }}
+                        />
+                    </View>
                 </View>
 
                 {errorMsg ? (
@@ -328,7 +371,7 @@ export default function SignUp() {
 
                 <View className="flex-row justify-center mt-6">
                     <Text className="text-gray-500 text-base">Already have an account? </Text>
-                    <Link href="/sign-in" asChild>
+                    <Link href="/sign-in" replace asChild>
                         <TouchableOpacity>
                             <Text className="text-blue-600 font-semibold text-base">Log In</Text>
                         </TouchableOpacity>

@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import CustomSpinner from "../../../components/CustomSpinner";
 import ImagePickerModal from "../../../components/ImagePickerModal";
 import { useTheme } from "../../../context/ThemeContext";
+import { MESSAGES } from "../../../constants/messages";
 
 export default function ProfileScreen() {
   const { user, isLoaded } = useUser();
@@ -48,10 +49,10 @@ export default function ProfileScreen() {
         const dataUrl = `data:${mimeType};base64,${asset.base64}`;
         await user?.setProfileImage({ file: dataUrl });
       }
-      Alert.alert("Success", "Profile picture updated successfully!");
+      Alert.alert("Success", MESSAGES.PROFILE.IMAGE_UPDATE_SUCCESS);
     } catch (error) {
-      console.error("Error setting profile image:", error);
-      Alert.alert("Error", "Failed to update profile picture.");
+      console.error(error);
+      Alert.alert("Error", MESSAGES.PROFILE.IMAGE_UPDATE_ERROR);
     } finally {
       setIsUpdating(false);
     }
@@ -60,9 +61,11 @@ export default function ProfileScreen() {
   const handleChooseFromGallery = async () => {
     try {
       if (Platform.OS !== "web") {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permissionResult.granted) {
-          Alert.alert("Permission Required", "Please allow access to your photo library.");
+        const { status, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          if (canAskAgain) {
+            Alert.alert("Permission Required", MESSAGES.PERMISSIONS.GALLERY_REQUIRED);
+          }
           return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -106,9 +109,11 @@ export default function ProfileScreen() {
   const handleTakePhoto = async () => {
     try {
       if (Platform.OS !== "web") {
-        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-        if (!permissionResult.granted) {
-          Alert.alert("Permission Required", "Please allow access to your camera.");
+        const { status, canAskAgain } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== "granted") {
+          if (canAskAgain) {
+            Alert.alert("Permission Required", MESSAGES.PERMISSIONS.CAMERA_REQUIRED);
+          }
           return;
         }
         const result = await ImagePicker.launchCameraAsync({

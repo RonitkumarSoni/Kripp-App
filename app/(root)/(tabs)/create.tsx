@@ -17,6 +17,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { WebView } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MESSAGES } from "../../../constants/messages";
 
 import CustomSpinner from "../../../components/CustomSpinner";
 import ImagePickerModal from "../../../components/ImagePickerModal";
