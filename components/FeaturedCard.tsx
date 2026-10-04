@@ -1,9 +1,12 @@
 import React from "react";
-import { Image, Text, TouchableOpacity, View, FlatList, Dimensions } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSavedProperty } from "../hooks/useSavedProperty";
 import { useTheme } from "../context/ThemeContext";
+
+export const FEATURED_CARD_WIDTH = 288;
+export const FEATURED_CARD_GAP = 16;
 
 export default function FeaturedCard({ property }: { property: any }) {
   const router = useRouter();
@@ -23,38 +26,21 @@ export default function FeaturedCard({ property }: { property: any }) {
   return (
     <TouchableOpacity
       onPress={() => router.push(`/(root)/property/${property.id}`)}
-      className="w-72 mr-4 rounded-3xl overflow-hidden border shadow-sm relative"
+      className="rounded-3xl overflow-hidden border shadow-sm relative"
       style={{
+        width: FEATURED_CARD_WIDTH,
+        marginRight: FEATURED_CARD_GAP,
+        flexShrink: 0,
         backgroundColor: theme.card,
         borderColor: theme.cardBorder,
         opacity: property.is_sold ? 0.5 : 1,
       }}
     >
-      {property.images && property.images.length > 1 ? (
-        <View style={{ width: 288, height: 176, overflow: "hidden" }}>
-          <FlatList
-            data={property.images}
-            keyExtractor={(_, idx) => idx.toString()}
-            horizontal={true}
-            pagingEnabled={true}
-            showsHorizontalScrollIndicator={false}
-            style={{ width: 288, height: 176 }}
-            renderItem={({ item }) => (
-              <Image
-                source={{ uri: item }}
-                style={{ width: 288, height: 176 }}
-                resizeMode="cover"
-              />
-            )}
-          />
-        </View>
-      ) : (
-        <Image
-          source={{ uri: property.images?.[0] || "https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800" }}
-          style={{ width: "100%", height: 176 }}
-          resizeMode="cover"
-        />
-      )}
+      <Image
+        source={{ uri: property.images?.[0] || "https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800" }}
+        style={{ width: '100%', height: 176 }}
+        resizeMode="cover"
+      />
 
       <View className="absolute top-3 left-3 px-3 py-1 rounded-full z-10" style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}>
         <Text className="text-xs font-semibold text-gray-800 capitalize">

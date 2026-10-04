@@ -9,9 +9,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "../../context/AuthContext";
 
-import { useSupabase } from "../../hooks/useSupabase";
+import * as database from "../../lib/database";
 import { Property } from "../../types";
 import { useTheme } from "../../context/ThemeContext";
 import CustomSpinner from "../../components/CustomSpinner";
@@ -22,7 +22,6 @@ import { MESSAGES } from "../../constants/messages";
 export default function MyPropertiesScreen() {
   const router = useRouter();
   const { user } = useUser();
-  const supabase = useSupabase();
   const { theme } = useTheme();
   const { showNotification } = useInAppNotification();
 
@@ -39,11 +38,7 @@ export default function MyPropertiesScreen() {
     if (!user?.id) return;
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("owner_clerk_id", user.id)
-        .order("created_at", { ascending: false });
+      const { data, error } = await database.listProperties(user.id);
 
       if (error) throw error;
       setProperties(data || []);
@@ -70,11 +65,7 @@ export default function MyPropertiesScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              const { error } = await supabase
-                .from("properties")
-                .delete()
-                .eq("id", id)
-                .eq("owner_clerk_id", user?.id); // extra safety
+              const { error } = await database.removeProperty(id);
 
               if (error) throw error;
 

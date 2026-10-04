@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "../../../context/AuthContext";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -21,7 +21,8 @@ import { MESSAGES } from "../../../constants/messages";
 
 import CustomSpinner from "../../../components/CustomSpinner";
 import ImagePickerModal from "../../../components/ImagePickerModal";
-import { useSupabase } from "../../../hooks/useSupabase";
+import { uploadImages } from "../../../lib/images";
+import * as database from "../../../lib/database";
 import { useInAppNotification } from "../../../context/NotificationContext";
 import { useTheme } from "../../../context/ThemeContext";
 
@@ -70,7 +71,6 @@ const INITIAL_FORM: FormState = {
 export default function CreatePropertyScreen() {
   const router = useRouter();
   const { user } = useUser();
-  const authSupabase = useSupabase();
   const { showNotification } = useInAppNotification();
   const { theme } = useTheme();
 
@@ -243,8 +243,8 @@ export default function CreatePropertyScreen() {
     setSubmitting(true);
 
     try {
-      const { error } = await authSupabase.from("properties").insert({
-        owner_clerk_id: user?.id || null,
+      const { error } = await database.createProperty({
+        owner_clerk_id: user?.id,
         title: form.title.trim(),
         description: form.description.trim(),
         price: priceNum,
@@ -256,13 +256,13 @@ export default function CreatePropertyScreen() {
         city: form.city.trim(),
         latitude: form.latitude ? Number(form.latitude) : 17.4065,
         longitude: form.longitude ? Number(form.longitude) : 78.4772,
-        images: form.images,
+        images: await uploadImages(form.images),
         is_featured: form.isFeatured,
         is_sold: false,
       });
 
       if (error) {
-        console.error("Supabase insert error:", error);
+        console.error("Property creation error:", error);
         showNotification({
           title: "Failed to List",
           body: error.message || "Something went wrong. Please try again.",

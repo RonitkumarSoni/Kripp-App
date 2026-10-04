@@ -1,4 +1,4 @@
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "../../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -19,7 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import CustomSpinner from "../../../components/CustomSpinner";
 import { useSavedProperty } from "../../../hooks/useSavedProperty";
-import { useSupabase } from "../../../hooks/useSupabase";
+import * as database from "../../../lib/database";
 import { useTheme } from "../../../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
@@ -38,7 +38,6 @@ export default function PropertyDetailScreen() {
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
 
   const { isSaved, saveLoading, toggleSave } = useSavedProperty(id ?? "");
-  const supabase = useSupabase();
 
   useEffect(() => {
     fetchProperty();
@@ -48,37 +47,10 @@ export default function PropertyDetailScreen() {
     if (!id) return;
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const { data, error } = await database.getProperty(String(id));
       
-      if (error || !data) {
-        // Fallback property data if DB table has not synced this ID
-        setProperty({
-          id,
-          title: "Modern Luxury Villa with Pool",
-          type: "villa",
-          price: 25000000,
-          bedrooms: 4,
-          bathrooms: 4,
-          area_sqft: 3200,
-          address: "Banjara Hills",
-          city: "Hyderabad",
-          latitude: 17.4065,
-          longitude: 78.4772,
-          description: "Stunning modern luxury villa with a private swimming pool, landscaped garden, and high-end finishes throughout. Located in the prestigious Banjara Hills area.",
-          is_featured: true,
-          is_sold: false,
-          images: [
-            "https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800",
-            "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800"
-          ]
-        });
-      } else {
-        setProperty(data);
-      }
+      if (error) throw error;
+      setProperty(data);
     } catch (err) {
       console.error("Error fetching property:", err);
     } finally {
@@ -150,12 +122,14 @@ export default function PropertyDetailScreen() {
               data={property.images || []}
               keyExtractor={(_, i) => i.toString()}
               renderItem={({ item }) => (
-                <TouchableOpacity onPress={() => setImageViewerVisible(true)}>
-                  <Image
-                    source={{ uri: item }}
-                    style={{ width, height: 300 }}
-                    resizeMode="cover"
-                  />
+                <TouchableOpacity onPress={() => setImageViewerVisible(true)} activeOpacity={0.95}>
+                  <View style={{ width, height: 300 }}>
+                    <Image
+                      source={{ uri: item }}
+                      style={{ width, height: 300 }}
+                      resizeMode="cover"
+                    />
+                  </View>
                 </TouchableOpacity>
               )}
               horizontal
@@ -163,6 +137,11 @@ export default function PropertyDetailScreen() {
               showsHorizontalScrollIndicator={false}
               onScroll={onScroll}
               scrollEventThrottle={16}
+              getItemLayout={(_, index) => ({
+                length: width,
+                offset: width * index,
+                index,
+              })}
             />
           </View>
 

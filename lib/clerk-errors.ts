@@ -8,5 +8,7 @@ export function clerkErrorMessage(error: unknown, fallback: string): string {
   if (detail?.code === 'too_many_requests' || detail?.code === 'rate_limit_exceeded') {
     return 'Too many attempts. Please wait before requesting another code.';
   }
-  return detail?.longMessage || detail?.message || response?.message || fallback;
+  const message = detail?.longMessage || detail?.message || response?.message || fallback;
+  // Include the provider's error code so delivery failures can be traced in the dashboard.
+  return detail?.code ? `${message} (${detail.code})` : message;
 }

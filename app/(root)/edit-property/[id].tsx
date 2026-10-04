@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "../../../context/AuthContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -18,7 +18,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomSpinner from "../../../components/CustomSpinner";
 import ImagePickerModal from "../../../components/ImagePickerModal";
-import { useSupabase } from "../../../hooks/useSupabase";
+import { uploadImages } from "../../../lib/images";
+import * as database from "../../../lib/database";
 import { useInAppNotification } from "../../../context/NotificationContext";
 import { useTheme } from "../../../context/ThemeContext";
 import { MESSAGES } from "../../../constants/messages";
@@ -49,7 +50,6 @@ export default function EditPropertyScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { user } = useUser();
-  const supabase = useSupabase();
   const { showNotification } = useInAppNotification();
   const { theme } = useTheme();
 
@@ -65,11 +65,7 @@ export default function EditPropertyScreen() {
 
   const fetchProperty = async () => {
     try {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const { data, error } = await database.getProperty(String(id));
 
       if (error) throw error;
 
@@ -193,9 +189,7 @@ export default function EditPropertyScreen() {
     setSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from("properties")
-        .update({
+      const { error } = await database.editProperty(String(id), {
           title: form.title.trim(),
           description: form.description.trim(),
           price: numPrice,
@@ -206,10 +200,8 @@ export default function EditPropertyScreen() {
           address: form.address.trim(),
           city: form.city.trim(),
           is_featured: form.isFeatured,
-          images: form.images,
-        })
-        .eq("id", id)
-        .eq("owner_clerk_id", user?.id);
+          images: await uploadImages(form.images),
+        });
 
       if (error) throw error;
 

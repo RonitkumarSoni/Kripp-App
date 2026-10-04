@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "../../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState, useRef, useEffect } from "react";
@@ -13,9 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomSpinner from "../../../components/CustomSpinner";
-import FeaturedCard from "../../../components/FeaturedCard";
+import FeaturedCard, { FEATURED_CARD_WIDTH, FEATURED_CARD_GAP } from "../../../components/FeaturedCard";
 import PropertyCard from "../../../components/PropertyCard";
-import { useSupabase } from "../../../hooks/useSupabase";
+import * as database from "../../../lib/database";
 import { Property } from "../../../types";
 
 import { SEED_PROPERTIES } from "../../../constants/data";
@@ -25,15 +25,14 @@ import { useTheme } from "../../../context/ThemeContext";
 export default function HomeScreen() {
   const { user } = useUser();
   const router = useRouter();
-  const supabase = useSupabase();
   const { theme } = useTheme();
 
-  const [featured, setFeatured] = useState<Property[]>([]);
-  const [recommended, setRecommended] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [featured, setFeatured] = useState<Property[]>(SEED_PROPERTIES.filter(p => p.is_featured));
+  const [recommended, setRecommended] = useState<Property[]>(SEED_PROPERTIES.filter(p => !p.is_featured));
+  const [loading, setLoading] = useState(false);
   const featuredRef = useRef<FlatList>(null);
   const featuredIndex = useRef(0);
-  const CARD_WIDTH = 288 + 16; // card width + margin
+  const CARD_WIDTH = FEATURED_CARD_WIDTH + FEATURED_CARD_GAP; // card width + margin
 
   useEffect(() => {
     if (featured.length <= 1) return;
@@ -55,13 +54,11 @@ export default function HomeScreen() {
 
   const fetchProperties = async () => {
     try {
-      setLoading(true);
+      // Keep existing cards visible while the database refreshes.
 
-      const res = await supabase
-        .from("properties")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const res = await database.listProperties();
 
+      if (res.error) throw res.error;
       const dbProperties = res && res.data ? res.data : [];
       
       // Combine DB properties with SEED_PROPERTIES, ensuring no duplicates if IDs match
@@ -174,6 +171,7 @@ export default function HomeScreen() {
                       contentContainerStyle={{ paddingHorizontal: 20 }}
                       snapToInterval={CARD_WIDTH}
                       decelerationRate="fast"
+                      onMomentumScrollEnd={event => { featuredIndex.current = Math.max(0, Math.min(featured.length - 1, Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH))); }}
                     />
                   </View>
                 )}

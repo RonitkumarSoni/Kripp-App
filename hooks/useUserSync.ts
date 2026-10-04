@@ -1,16 +1,17 @@
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "../context/AuthContext";
 import { useEffect } from "react";
-import { useSupabase } from "./useSupabase";
+import * as database from "../lib/database";
 import { useUserStore } from "../store/useStore";
 
 export const useUserSync = () => {
   const { user } = useUser();
   const setIsAdmin = useUserStore((state) => state.setIsAdmin);
-  const authSupabase = useSupabase();
 
   useEffect(() => {
-    if (!user) return;
-    
+    if (!user || !user.id) { setIsAdmin(false); return; }
+    let active = true;
+    setIsAdmin(false);
+
     const syncUser = async () => {
       try {
         const userEmail = user.emailAddresses[0]?.emailAddress || "";
@@ -18,43 +19,24 @@ export const useUserSync = () => {
         const userLastName = user.lastName || "";
         const userAvatar = user.imageUrl || "";
 
-        // 1. Check if user already exists
-        const { data, error: selectError } = await authSupabase
-          .from("users")
-          .select("clerk_id, is_admin")
-          .eq("clerk_id", user.id)
-          .maybeSingle();
+        const { data: newUser, error: insertError } = await database.syncUserProfile({
+          email: userEmail, first_name: userFirstName, last_name: userLastName, avatar_url: userAvatar,
+        });
 
-        if (data) {
-          setIsAdmin(data.is_admin ?? false);
-          return;
-        }
-
-        // 2. Insert new user into Supabase
-        const { data: newUser, error: insertError } = await authSupabase
-          .from("users")
-          .upsert({
-            clerk_id: user.id,
-            email: userEmail,
-            first_name: userFirstName,
-            last_name: userLastName,
-            avatar_url: userAvatar,
-          }, { onConflict: "clerk_id" })
-          .select("is_admin")
-          .maybeSingle();
-
-        if (newUser) {
+        if (newUser && active) {
           setIsAdmin(newUser.is_admin ?? false);
         }
 
         if (insertError) {
-          console.error("Supabase user sync error:", insertError.message || insertError);
+          // RLS may block this if policies haven't been updated yet — non-fatal
+          console.warn("Firestore user sync failed:", insertError.message);
         }
       } catch (err) {
-        console.error("Error syncing user to Supabase:", err);
+        console.warn("User sync failed:", err);
       }
     };
 
     syncUser();
-  }, [user, authSupabase, setIsAdmin]);
+    return () => { active = false; };
+  }, [user?.id, setIsAdmin]);
 };

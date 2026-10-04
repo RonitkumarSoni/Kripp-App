@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import CustomSpinner from "../../../components/CustomSpinner";
 import FilterModal from "../../../components/FilterModal";
 import PropertyCard from "../../../components/PropertyCard";
-import { useSupabase } from "../../../hooks/useSupabase";
+import * as database from "../../../lib/database";
 import { useFilterStore } from "../../../store/filterStore";
 import { Property } from "../../../types";
 
@@ -50,7 +50,6 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
-  const supabase = useSupabase();
   const { theme } = useTheme();
   const { openFilters } = useLocalSearchParams<{ openFilters?: string }>();
 
@@ -88,17 +87,8 @@ export default function SearchScreen() {
     setLoading(true);
 
     try {
-      let query = supabase.from("properties").select("*");
-
-      if (search && search.trim()) {
-        query = query.or(`title.ilike.%${search}%,city.ilike.%${search}%`);
-      }
-      if (type) query = query.eq("type", type);
-      if (bedrooms) query = query.eq("bedrooms", bedrooms);
-      if (minPrice) query = query.gte("price", minPrice);
-      if (maxPrice) query = query.lte("price", maxPrice);
-
-      const res = await query.order("created_at", { ascending: false });
+      const res = await database.listProperties();
+      if (res.error) throw res.error;
 
       const dbProperties = res && res.data ? res.data : [];
       const combined = [...dbProperties];

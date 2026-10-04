@@ -1,4 +1,4 @@
-import { useAuth, useUser } from "@clerk/clerk-expo";
+import { useAuth, useUser } from "../../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -11,6 +11,7 @@ import {
   Switch,
   Alert,
 } from "react-native";
+import UserAvatar from "../../../components/UserAvatar";
 import CustomSpinner from "../../../components/CustomSpinner";
 import { useTheme } from "../../../context/ThemeContext";
 import { MESSAGES } from "../../../constants/messages";
@@ -92,20 +93,7 @@ export default function SettingsScreen() {
             borderColor: theme.cardBorder,
           }}
         >
-          <View
-            style={{
-              width: 50,
-              height: 50,
-              borderRadius: 25,
-              backgroundColor: theme.accent,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text style={{ color: "#FFFFFF", fontSize: 20, fontWeight: "700" }}>
-              {user.firstName ? user.firstName[0] : "U"}
-            </Text>
-          </View>
+          <UserAvatar size={50} uri={user.imageUrl} name={`${user.firstName} ${user.lastName}`} email={user.primaryEmailAddress.emailAddress} />
           <View>
             <Text style={{ fontSize: 15, fontWeight: "700", color: theme.text }}>
               {user.firstName} {user.lastName}

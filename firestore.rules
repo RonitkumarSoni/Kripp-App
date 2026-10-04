@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signedIn() { return request.auth != null; }
+  function admin() { return signedIn() && exists(/databases/$(database)/documents/kribb_users/$(request.auth.uid)) && get(/databases/$(database)/documents/kribb_users/$(request.auth.uid)).data.get('is_admin', false) == true; }
+  match /kribb_users/{uid} {
+   allow read: if signedIn() && request.auth.uid == uid;
+   allow create: if signedIn() && request.auth.uid == uid && request.resource.data.keys().hasOnly(['email','first_name','last_name','avatar_url']);
+   allow update: if signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email','first_name','last_name','avatar_url']);
+   match /saved/{propertyId} {
+    allow read, delete: if signedIn() && request.auth.uid == uid;
+    allow create, update: if signedIn() && request.auth.uid == uid && request.resource.data.keys().hasOnly(['property_id', 'created_at']) && request.resource.data.property_id == propertyId;
+   }
+  }
+  match /kribb_properties/{propertyId} {
+   allow read: if true;
+   allow create: if signedIn() && request.resource.data.owner_clerk_id == request.auth.uid && validProperty();
+   allow update: if signedIn() && (resource.data.owner_clerk_id == request.auth.uid || admin()) && request.resource.data.owner_clerk_id == resource.data.owner_clerk_id && validProperty();
+   allow delete: if signedIn() && (resource.data.owner_clerk_id == request.auth.uid || admin());
+   function validProperty() {
+    return request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 200
+     && request.resource.data.description is string && request.resource.data.description.size() <= 20000
+     && request.resource.data.price is number && request.resource.data.price > 0
+     && request.resource.data.images is list && request.resource.data.images.size() > 0 && request.resource.data.images.size() <= 6;
+   }
+  }
+ }
+}

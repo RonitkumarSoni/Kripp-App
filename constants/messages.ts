@@ -15,8 +15,6 @@ export const MESSAGES = {
     VERIFICATION_SENT: "A new verification code has been sent to your email.",
     VERIFICATION_FAILED: "Verification failed. Please check your code and try again.",
     VERIFICATION_ALREADY: "Your email has already been verified. Logging you in...",
-    GOOGLE_OAUTH_CANCELLED: "Google sign-in was cancelled or requires additional verification.",
-    GOOGLE_OAUTH_ERROR: "Something went wrong with Google sign-in. Please try again.",
     BIOMETRIC_NOT_SUPPORTED: "Biometric authentication is not supported on this device.",
     BIOMETRIC_NOT_ENROLLED: "No biometrics enrolled. Please set up fingerprint or face lock in your device settings.",
     BIOMETRIC_CANCELLED: "Authentication cancelled.",

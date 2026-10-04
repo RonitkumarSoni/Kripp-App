@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "../../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -14,12 +14,11 @@ import {
 } from "react-native";
 
 import CustomSpinner from "../../../components/CustomSpinner";
-import { useSupabase } from "../../../hooks/useSupabase";
+import * as database from "../../../lib/database";
 import { useTheme } from "../../../context/ThemeContext";
 
 export default function AddProperty() {
   const { user } = useUser();
-  const supabase = useSupabase();
   const { theme, isDark } = useTheme();
 
   const [loading, setLoading] = useState(false);
@@ -54,11 +53,7 @@ export default function AddProperty() {
     try {
       setLoading(true);
 
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("is_admin")
-        .eq("clerk_id", user.id)
-        .single();
+      const { data: userData, error: userError } = await database.getUserProfile(user.id);
 
       if (userError || !userData?.is_admin) {
         Alert.alert("Permission Denied", "Only administrators are authorized to add new properties.");
@@ -66,7 +61,7 @@ export default function AddProperty() {
         return;
       }
 
-      const { error } = await supabase.from("properties").insert([
+      const { error } = await database.createProperty(
         {
           title,
           description,
@@ -83,7 +78,7 @@ export default function AddProperty() {
           is_featured: false,
           is_sold: false,
         },
-      ]);
+      );
 
       if (error) throw error;
 

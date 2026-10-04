@@ -1,4 +1,4 @@
-import { useAuth, useUser } from "@clerk/clerk-expo";
+import { useAuth, useUser } from "../../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -14,6 +14,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import UserAvatar from "../../../components/UserAvatar";
 import CustomSpinner from "../../../components/CustomSpinner";
 import ImagePickerModal from "../../../components/ImagePickerModal";
 import { useTheme } from "../../../context/ThemeContext";
@@ -90,6 +91,8 @@ export default function ProfileScreen() {
                 try {
                   const dataUrl = event.target.result;
                   await user?.setProfileImage({ file: dataUrl });
+                } catch (error) {
+                  Alert.alert("Error", MESSAGES.PROFILE.IMAGE_UPDATE_ERROR);
                 } finally {
                   setIsUpdating(false);
                 }
@@ -144,10 +147,7 @@ export default function ProfileScreen() {
       {/* Avatar + Name */}
       <View className="items-center py-8">
         <View className="relative mb-4">
-          <Image
-            source={{ uri: user.imageUrl }}
-            style={{ width: 96, height: 96, borderRadius: 48 }}
-          />
+          <UserAvatar uri={user.imageUrl} name={`${user.firstName} ${user.lastName}`} email={user.primaryEmailAddress.emailAddress} />
           <TouchableOpacity
             onPress={() => setShowImagePicker(true)}
             disabled={isUpdating}

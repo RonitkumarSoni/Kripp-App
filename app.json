@@ -69,7 +69,11 @@
         {
           "faceIDPermission": "Allow Kribb to use Face ID for quick sign-in."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

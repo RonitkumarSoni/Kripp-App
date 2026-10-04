@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "../context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useSupabase } from "./useSupabase";
+import * as database from "../lib/database";
 import { useInAppNotification } from "../context/NotificationContext";
 import { MESSAGES } from "../constants/messages";
 
@@ -29,7 +29,6 @@ async function setLocalSavedIds(ids: string[]): Promise<void> {
 
 export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
   const { user } = useUser();
-  const supabase = useSupabase();
   const { showNotification } = useInAppNotification();
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -45,13 +44,9 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
           const ids = await getLocalSavedIds();
           if (isMounted) setIsSaved(ids.includes(propertyId));
         } else if (user) {
-          // Check Supabase for real DB properties
-          const { data } = await supabase
-            .from("saved_properties")
-            .select("id")
-            .eq("user_clerk_id", user.id)
-            .eq("property_id", propertyId)
-            .maybeSingle();
+          // Check Firestore for real DB properties
+          const { data, error } = await database.isPropertySaved(propertyId);
+          if (error) throw error;
           if (isMounted) setIsSaved(!!data);
         }
       } catch (err) {
@@ -107,18 +102,14 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
           });
         }
       } else {
-        // ─── Real DB property: use Supabase ─────────────────────
+        // ─── Real DB property: use Firestore ─────────────────────
         if (!user) return;
 
         if (prevSaved) {
-          const { error } = await supabase
-            .from("saved_properties")
-            .delete()
-            .eq("user_clerk_id", user.id)
-            .eq("property_id", propertyId);
+          const { error } = await database.saveProperty(propertyId, false);
             
           if (error) {
-            console.error("Supabase delete error:", error);
+            console.error("Firestore delete error:", error);
             setIsSaved(prevSaved);
             return showNotification({ title: "Error", body: MESSAGES.PROPERTY.UNSAVE_ERROR, type: "error" });
           }
@@ -130,13 +121,10 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
             type: "info",
           });
         } else {
-          const { error } = await supabase.from("saved_properties").insert({
-            user_clerk_id: user.id,
-            property_id: propertyId,
-          });
+          const { error } = await database.saveProperty(propertyId, true);
           
           if (error) {
-            console.error("Supabase insert error:", error);
+            console.error("Firestore insert error:", error);
             setIsSaved(prevSaved);
             return showNotification({ title: "Error", body: MESSAGES.PROPERTY.SAVE_ERROR, type: "error" });
           }

@@ -1,4 +1,4 @@
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "../../context/AuthContext";
 import { Stack } from "expo-router";
 import React from "react";
 

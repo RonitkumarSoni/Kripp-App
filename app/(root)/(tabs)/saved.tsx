@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "../../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
@@ -8,7 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import CustomSpinner from "../../../components/CustomSpinner";
 import PropertyCard from "../../../components/PropertyCard";
-import { useSupabase } from "../../../hooks/useSupabase";
+import * as database from "../../../lib/database";
 import { Property, SavedProperty } from "../../../types";
 
 import { SEED_PROPERTIES } from "../../../constants/data";
@@ -18,7 +18,6 @@ const LOCAL_SAVED_KEY = "kribb_local_saved_properties";
 
 export default function SavedScreen() {
   const { user } = useUser();
-  const supabase = useSupabase();
   const router = useRouter();
   const { theme } = useTheme();
 
@@ -48,14 +47,11 @@ export default function SavedScreen() {
         console.error("Error reading local saved:", e);
       }
 
-      // 2. Fetch DB-saved properties from Supabase (only if user is logged in)
+      // 2. Fetch DB-saved properties from Firestore (only if user is logged in)
       if (user) {
         try {
-          const res = await supabase
-            .from("saved_properties")
-            .select("id, property_id, properties(*)")
-            .eq("user_clerk_id", user.id)
-            .order("id", { ascending: false });
+          const res = await database.listSavedProperties();
+          if (res.error) throw res.error;
 
           if (res && res.data) {
             res.data.forEach((item: any) => {
