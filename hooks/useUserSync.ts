@@ -28,7 +28,7 @@ export const useUserSync = () => {
         }
 
         if (insertError) {
-          // RLS may block this if policies haven't been updated yet — non-fatal
+          // Profile sync must not block authentication when the database is unavailable.
           console.warn("Firestore user sync failed:", insertError.message);
         }
       } catch (err) {
@@ -38,5 +38,5 @@ export const useUserSync = () => {
 
     syncUser();
     return () => { active = false; };
-  }, [user?.id, setIsAdmin]);
+  }, [user?.id, user?.firstName, user?.lastName, user?.imageUrl, user?.primaryEmailAddress.emailAddress, setIsAdmin]);
 };
