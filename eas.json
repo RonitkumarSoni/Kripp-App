@@ -7,13 +7,13 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAbbYLvEOLNa7vdkhzQFADuIdDbIM85-ms",
-        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "music-app-92cbb.firebaseapp.com",
-        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "music-app-92cbb",
-        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:514260576219:android:ecbc4c367343823373e9fe",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyB4o5FfFJk6o-W4TRmnU6CpxXsFZbhWRyk",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "kribb-f4728.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "kribb-f4728",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:908073244493:android:2961bb8de288b42edb0904",
         "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dz9bd0xc2",
         "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "kribb_images_v1",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "514260576219-em1tjqq13ci3coffqqgkrrcrqie9noor.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908073244493-suv72tavf24d2e1cgak4kgvv105ggte1.apps.googleusercontent.com"
       }
     },
     "preview": {
@@ -22,27 +22,25 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_CONVEX_URL": "https://aromatic-marlin-318.convex.cloud",
-        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAbbYLvEOLNa7vdkhzQFADuIdDbIM85-ms",
-        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "music-app-92cbb.firebaseapp.com",
-        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "music-app-92cbb",
-        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:514260576219:android:ecbc4c367343823373e9fe",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyB4o5FfFJk6o-W4TRmnU6CpxXsFZbhWRyk",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "kribb-f4728.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "kribb-f4728",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:908073244493:android:2961bb8de288b42edb0904",
         "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dz9bd0xc2",
         "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "kribb_images_v1",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "514260576219-em1tjqq13ci3coffqqgkrrcrqie9noor.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908073244493-suv72tavf24d2e1cgak4kgvv105ggte1.apps.googleusercontent.com"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_CONVEX_URL": "https://aromatic-marlin-318.convex.cloud",
-        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAbbYLvEOLNa7vdkhzQFADuIdDbIM85-ms",
-        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "music-app-92cbb.firebaseapp.com",
-        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "music-app-92cbb",
-        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:514260576219:android:ecbc4c367343823373e9fe",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyB4o5FfFJk6o-W4TRmnU6CpxXsFZbhWRyk",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "kribb-f4728.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "kribb-f4728",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:908073244493:android:2961bb8de288b42edb0904",
         "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dz9bd0xc2",
         "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "kribb_images_v1",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "514260576219-em1tjqq13ci3coffqqgkrrcrqie9noor.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908073244493-suv72tavf24d2e1cgak4kgvv105ggte1.apps.googleusercontent.com"
       }
     }
   },
