@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { usePasswordResetCooldown } from '../hooks/usePasswordResetCooldown';
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const inputStyle = { color: '#111827', backgroundColor: '#FFFFFF', fontSize: 16, minHeight: 52 };
+const labelStyle = { color: '#374151', fontSize: 14, fontWeight: '600' as const, marginBottom: 8 };
 
 export default function FirebaseAuthScreen({ signup = false }: { signup?: boolean }) {
  const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
@@ -51,9 +53,11 @@ export default function FirebaseAuthScreen({ signup = false }: { signup?: boolea
   <Image source={require('../assets/images/kribb.png')} style={{ width: 120, height: 48, marginBottom: 24 }} resizeMode="contain" />
   <Text className="text-3xl font-semibold text-gray-900 mb-3">{signup ? 'Create your account' : 'Welcome back'}</Text>
   <Text className="text-gray-500 mb-6">{signup ? 'Create an account with your email and password.' : 'Sign in with your email and password.'}</Text>
-  {signup && <TextInput value={name} onChangeText={setName} placeholder="Full name" className="border border-gray-300 rounded-xl p-4 mb-3" />}
-  <TextInput value={email} onChangeText={setEmail} placeholder="Email address" autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" className="border border-gray-300 rounded-xl p-4 mb-3" />
-  <TextInput value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry autoCapitalize="none" autoComplete={signup ? 'new-password' : 'current-password'} className="border border-gray-300 rounded-xl p-4 mb-4" />
+  {signup && <><Text style={labelStyle}>Full name</Text><TextInput accessibilityLabel="Full name" value={name} onChangeText={setName} placeholder="Enter your full name" placeholderTextColor="#6B7280" style={inputStyle} className="border border-gray-300 rounded-xl p-4 mb-3" /></>}
+  <Text style={labelStyle}>Email address</Text>
+  <TextInput accessibilityLabel="Email address" value={email} onChangeText={setEmail} placeholder="Enter your email address" placeholderTextColor="#6B7280" style={inputStyle} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" className="border border-gray-300 rounded-xl p-4 mb-3" />
+  <Text style={labelStyle}>Password</Text>
+  <TextInput accessibilityLabel="Password" value={password} onChangeText={setPassword} placeholder={signup ? 'Create a password (at least 8 characters)' : 'Enter your password'} placeholderTextColor="#6B7280" style={inputStyle} secureTextEntry autoCapitalize="none" autoCorrect={false} autoComplete={signup ? 'new-password' : 'current-password'} className="border border-gray-300 rounded-xl p-4 mb-4" />
   {!!error && <Text accessibilityRole="alert" className="text-red-600 mb-4">{error}</Text>}
   {!!message && <Text className="text-green-700 mb-4">{message}</Text>}
   <TouchableOpacity disabled={busy} onPress={submit} className="bg-blue-600 rounded-xl p-4 items-center" style={{ opacity: busy ? 0.6 : 1 }}>
@@ -61,7 +65,7 @@ export default function FirebaseAuthScreen({ signup = false }: { signup?: boolea
   </TouchableOpacity>
   <View className="flex-row items-center my-5"><View className="flex-1 h-px bg-gray-200" /><Text className="mx-3 text-gray-500">or</Text><View className="flex-1 h-px bg-gray-200" /></View>
   <TouchableOpacity disabled={busy} accessibilityRole="button" onPress={() => run(async () => { const result = await signInGoogle(); if (result) await refresh(); })} className="border border-gray-300 rounded-xl p-4 items-center flex-row justify-center" style={{ opacity: busy ? 0.6 : 1 }}>
-   <Text style={{ color: '#4285F4', fontWeight: '700', fontSize: 20, marginRight: 12 }}>G</Text><Text className="text-gray-900 font-semibold">Continue with Google</Text>
+   <Image source={require('../assets/images/google-g.png')} style={{ width: 24, height: 24, marginRight: 12 }} resizeMode="contain" accessible={false} /><Text className="text-gray-900 font-semibold">Continue with Google</Text>
   </TouchableOpacity>
   {!signup && <TouchableOpacity disabled={busy || secondsLeft > 0} onPress={() => run(async () => { const recipient = normalizeEmail(email); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) throw new Error('Enter a valid email address first.'); await requestPasswordReset(recipient); startCooldown(); setMessage('If an account exists, check your email for password reset instructions.'); })} className="p-4 items-center"><Text className="text-blue-600">{secondsLeft > 0 ? `Try again in ${secondsLeft}s` : 'Forgot password?'}</Text></TouchableOpacity>}
   <View className="mt-4 pb-12 items-center">
