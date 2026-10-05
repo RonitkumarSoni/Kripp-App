@@ -13,6 +13,7 @@ import { useUser } from "../../context/AuthContext";
 
 import * as database from "../../lib/database";
 import { Property } from "../../types";
+import { sendLocalNotification } from "../../lib/notifications";
 import { useTheme } from "../../context/ThemeContext";
 import CustomSpinner from "../../components/CustomSpinner";
 import PropertyCard from "../../components/PropertyCard";
@@ -74,6 +75,11 @@ export default function MyPropertiesScreen() {
                 body: MESSAGES.PROPERTY.DELETE_SUCCESS,
                 type: "success",
               });
+
+              sendLocalNotification(
+                "Property Deleted 🗑️",
+                "Your property has been successfully removed from Kribb."
+              );
               
               fetchMyProperties();
             } catch (error) {

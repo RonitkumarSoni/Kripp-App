@@ -1,4 +1,4 @@
-import { useAuth, useUser } from "../../../context/AuthContext";
+import { useAuth, useUser } from "../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -6,15 +6,17 @@ import {
   Text,
   TouchableOpacity,
   View,
-  SafeAreaView,
   ScrollView,
   Switch,
   Alert,
 } from "react-native";
-import UserAvatar from "../../../components/UserAvatar";
-import CustomSpinner from "../../../components/CustomSpinner";
-import { useTheme } from "../../../context/ThemeContext";
-import { MESSAGES } from "../../../constants/messages";
+import { SafeAreaView } from "react-native-safe-area-context";
+import UserAvatar from "../../components/UserAvatar";
+import CustomSpinner from "../../components/CustomSpinner";
+import { useTheme } from "../../context/ThemeContext";
+import { useInAppNotification } from "../../context/NotificationContext";
+import { sendLocalNotification } from "../../lib/notifications";
+import { MESSAGES } from "../../constants/messages";
 
 export default function SettingsScreen() {
   const { user, isLoaded } = useUser();
@@ -22,7 +24,14 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { theme, isDark, toggleTheme } = useTheme();
 
-  const [pushEnabled, setPushEnabled] = useState(true);
+  const { pushEnabled, setPushEnabled } = useInAppNotification();
+  const [notificationBusy, setNotificationBusy] = useState(false);
+  const changeNotifications = async (enabled: boolean) => {
+    if (notificationBusy) return;
+    setNotificationBusy(true);
+    try { await setPushEnabled(enabled); } catch (error) { Alert.alert("Notifications", error instanceof Error ? error.message : "Unable to enable notifications."); }
+    finally { setNotificationBusy(false); }
+  };
   const [emailUpdates, setEmailUpdates] = useState(true);
 
   const handleSignOut = async () => {
@@ -120,11 +129,12 @@ export default function SettingsScreen() {
           >
             <SettingToggle
               icon="notifications"
-              label="Push Notifications"
+              label={notificationBusy ? "Enabling notifications…" : "Phone Notifications"}
               value={pushEnabled}
-              onValueChange={setPushEnabled}
+              onValueChange={changeNotifications}
               theme={theme}
             />
+            {pushEnabled && <SettingItem icon="notifications-outline" label="Send test notification" theme={theme} onPress={async () => { const result = await sendLocalNotification("Kribb notifications enabled", "You will receive a notification after adding a property."); if (!result?.sent) Alert.alert("Notifications", result?.reason || "Enable notifications in your phone settings."); }} />}
             <View style={{ height: 1, backgroundColor: theme.cardBorder, marginLeft: 16 }} />
             <SettingToggle
               icon="mail"
@@ -160,15 +170,15 @@ export default function SettingsScreen() {
           >
             <SettingItem
               icon="lock-closed"
-              label="Change Password"
-              onPress={() => handleUnderConstruction("Password Management")}
+              label="Reset Password"
+              onPress={() => router.push("/(root)/change-password")}
               theme={theme}
             />
             <View style={{ height: 1, backgroundColor: theme.cardBorder, marginLeft: 16 }} />
             <SettingItem
               icon="shield-checkmark"
               label="Privacy Settings"
-              onPress={() => handleUnderConstruction("Privacy Control")}
+              onPress={() => router.push("/(root)/privacy-settings")}
               theme={theme}
             />
           </View>
@@ -191,14 +201,14 @@ export default function SettingsScreen() {
             <SettingItem
               icon="document-text"
               label="Terms of Service"
-              onPress={() => Alert.alert("Terms of Service", "TOS details go here.")}
+              onPress={() => router.push("/(root)/terms")}
               theme={theme}
             />
             <View style={{ height: 1, backgroundColor: theme.cardBorder, marginLeft: 16 }} />
             <SettingItem
               icon="key"
               label="Privacy Policy"
-              onPress={() => Alert.alert("Privacy Policy", "Privacy policy details go here.")}
+              onPress={() => router.push("/(root)/privacy-policy")}
               theme={theme}
             />
             <View style={{ height: 1, backgroundColor: theme.cardBorder, marginLeft: 16 }} />

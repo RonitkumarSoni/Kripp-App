@@ -1,6 +1,6 @@
 import { useUser } from "../../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRouter, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,6 +19,8 @@ const LOCAL_SAVED_KEY = "kribb_local_saved_properties";
 export default function SavedScreen() {
   const { user } = useUser();
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const isFromProfile = params.fromProfile === "true";
   const { theme } = useTheme();
 
   const [saved, setSaved] = useState<SavedProperty[]>([]);
@@ -83,13 +85,20 @@ export default function SavedScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
       {/* Header */}
-      <View className="px-5 pt-4 pb-3">
-        <Text style={{ fontSize: 24, fontWeight: "600", color: theme.text }}>Saved</Text>
+      <View className="px-5 pt-4 pb-3 flex-row items-center gap-3">
+        {isFromProfile && (
+          <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </TouchableOpacity>
+        )}
+        <View>
+          <Text style={{ fontSize: 24, fontWeight: "600", color: theme.text }}>Saved</Text>
         {!loading && (
           <Text style={{ color: theme.textMuted }} className="text-sm mt-1">
             {saved.length} {saved.length === 1 ? "property" : "properties"} saved
           </Text>
         )}
+        </View>
       </View>
 
       {loading ? (

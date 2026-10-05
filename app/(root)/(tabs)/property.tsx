@@ -6,7 +6,6 @@ import {
   Alert,
   SafeAreaView,
   ScrollView,
-  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
@@ -53,14 +52,6 @@ export default function AddProperty() {
     try {
       setLoading(true);
 
-      const { data: userData, error: userError } = await database.getUserProfile(user.id);
-
-      if (userError || !userData?.is_admin) {
-        Alert.alert("Permission Denied", "Only administrators are authorized to add new properties.");
-        setLoading(false);
-        return;
-      }
-
       const { error } = await database.createProperty(
         {
           title,
@@ -105,7 +96,7 @@ export default function AddProperty() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
-      <StatusBar barStyle={theme.statusBarStyle} />
+
       <ScrollView className="flex-1 px-6 pt-4" showsVerticalScrollIndicator={false}>
         <View className="mb-6">
           <Text style={{ color: theme.text }} className="font-semibold text-3xl">Add Property</Text>

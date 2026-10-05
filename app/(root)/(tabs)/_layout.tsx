@@ -75,6 +75,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        animation: "none",
         tabBarShowLabel: false,
         tabBarBackground: () => (
           <View
@@ -86,7 +87,7 @@ export default function TabLayout() {
               borderColor: theme.tabBarBorder,
             }}
           >
-            <BlurView
+            {Platform.OS === "android" ? <View style={{ flex: 1, backgroundColor: theme.tabBarBg }} /> : <BlurView
               tint={isDark ? "dark" : "light"}
               intensity={85}
               style={{
@@ -95,7 +96,7 @@ export default function TabLayout() {
                   ? theme.tabBarBg
                   : "transparent",
               }}
-            />
+            />}
           </View>
         ),
         tabBarStyle: {
@@ -172,12 +173,6 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="property"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="setting"
         options={{
           href: null,
         }}

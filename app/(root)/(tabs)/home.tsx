@@ -26,6 +26,11 @@ export default function HomeScreen() {
   const { user } = useUser();
   const router = useRouter();
   const { theme } = useTheme();
+  const [focused, setFocused] = useState(false);
+  useFocusEffect(useCallback(() => {
+    setFocused(true);
+    return () => setFocused(false);
+  }, []));
 
   const [featured, setFeatured] = useState<Property[]>(SEED_PROPERTIES.filter(p => p.is_featured));
   const [recommended, setRecommended] = useState<Property[]>(SEED_PROPERTIES.filter(p => !p.is_featured));
@@ -35,7 +40,7 @@ export default function HomeScreen() {
   const CARD_WIDTH = FEATURED_CARD_WIDTH + FEATURED_CARD_GAP; // card width + margin
 
   useEffect(() => {
-    if (featured.length <= 1) return;
+    if (!focused || featured.length <= 1) return;
     const interval = setInterval(() => {
       featuredIndex.current = (featuredIndex.current + 1) % featured.length;
       featuredRef.current?.scrollToOffset({
@@ -44,7 +49,7 @@ export default function HomeScreen() {
       });
     }, 3000);
     return () => clearInterval(interval);
-  }, [featured]);
+  }, [featured, focused]);
 
   useFocusEffect(
     useCallback(() => {
@@ -97,10 +102,10 @@ export default function HomeScreen() {
                 resizeMode="contain"
               />
               <TouchableOpacity
-                onPress={async () => {
+                onPress={() => {
                   try {
                     const Haptics = require("expo-haptics");
-                    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                   } catch (e) {}
                   router.push("/(root)/notification");
                 }}

@@ -1,70 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import {
   FlatList,
   Text,
   TouchableOpacity,
   View,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useInAppNotification, type NotificationItem } from "../../context/NotificationContext";
 import { useTheme } from "../../context/ThemeContext";
-
-interface NotificationItem {
-  id: string;
-  title: string;
-  body: string;
-  time: string;
-  type: "info" | "success" | "warning";
-  read: boolean;
-}
-
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: "1",
-    title: "Welcome to Kribb!",
-    body: "Start exploring premium properties in Mumbai, Delhi, and Bangalore today.",
-    time: "2 hours ago",
-    type: "info",
-    read: false,
-  },
-  {
-    id: "2",
-    title: "New Camera Feature Launched 📸",
-    body: "You can now snap real-time photos of your properties directly using your camera when listing.",
-    time: "1 day ago",
-    type: "success",
-    read: false,
-  },
-  {
-    id: "3",
-    title: "Property Saved Successfully",
-    body: "You added 'Modern Luxury Villa' to your saved list. You can view all saved properties anytime in the Saved tab.",
-    time: "2 days ago",
-    type: "success",
-    read: true,
-  },
-];
 
 export default function NotificationScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-  const [notifications, setNotifications] = useState<NotificationItem[]>(
-    INITIAL_NOTIFICATIONS
-  );
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const clearAll = () => {
-    setNotifications([]);
-  };
+  const { notifications, markAllAsRead, clearAll } = useInAppNotification();
 
   const getIcon = (type: NotificationItem["type"]) => {
     switch (type) {
       case "success":
         return { name: "checkmark-circle", color: "#10B981" };
+      case "error":
       case "warning":
         return { name: "alert-circle", color: "#F59E0B" };
       default:
@@ -120,7 +76,7 @@ export default function NotificationScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
         renderItem={({ item }) => {
-          const icon = getIcon(item.type);
+          const icon = getIcon(item.type || "info");
           return (
             <View
               style={{
@@ -163,7 +119,7 @@ export default function NotificationScreen() {
                   {item.body}
                 </Text>
                 <Text style={{ fontSize: 10, color: theme.textMuted }}>
-                  {item.time}
+                  {new Date(item.time).toLocaleString()}
                 </Text>
               </View>
               {!item.read && (

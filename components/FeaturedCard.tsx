@@ -1,12 +1,13 @@
 import React from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, View, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSavedProperty } from "../hooks/useSavedProperty";
 import { useTheme } from "../context/ThemeContext";
 
-export const FEATURED_CARD_WIDTH = 288;
-export const FEATURED_CARD_GAP = 16;
+const { width } = Dimensions.get("window");
+export const FEATURED_CARD_WIDTH = width - 40;
+export const FEATURED_CARD_GAP = 20;
 
 export default function FeaturedCard({ property }: { property: any }) {
   const router = useRouter();

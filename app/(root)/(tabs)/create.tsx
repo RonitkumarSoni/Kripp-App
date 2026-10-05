@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useUser } from "../../../context/AuthContext";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Alert,
   Image,
@@ -21,8 +21,9 @@ import { MESSAGES } from "../../../constants/messages";
 
 import CustomSpinner from "../../../components/CustomSpinner";
 import ImagePickerModal from "../../../components/ImagePickerModal";
-import { uploadImages } from "../../../lib/images";
+import { uploadImage } from "../../../lib/images";
 import * as database from "../../../lib/database";
+import { sendLocalNotification } from "../../../lib/notifications";
 import { useInAppNotification } from "../../../context/NotificationContext";
 import { useTheme } from "../../../context/ThemeContext";
 
@@ -83,6 +84,9 @@ export default function CreatePropertyScreen() {
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [tempCoords, setTempCoords] = useState<{lat: number, lng: number} | null>(null);
 
+  // Pre-upload: map local URI -> Promise<cloudinary URL>
+  const uploadCache = useRef<Map<string, Promise<string>>>(new Map());
+
   const updateForm = (fields: Partial<FormState>) =>
     setForm((prev) => ({ ...prev, ...fields }));
 
@@ -94,6 +98,12 @@ export default function CreatePropertyScreen() {
   const processImageResult = async (result: any) => {
     if (result.canceled) return;
     const uris = result.assets.map((asset: any) => asset.uri);
+    // Start uploading each image immediately in background
+    uris.forEach((uri: string) => {
+      if (!uploadCache.current.has(uri)) {
+        uploadCache.current.set(uri, uploadImage(uri));
+      }
+    });
     updateForm({
       images: [...form.images, ...uris],
       localImages: [...form.localImages, ...uris],
@@ -256,7 +266,7 @@ export default function CreatePropertyScreen() {
         city: form.city.trim(),
         latitude: form.latitude ? Number(form.latitude) : 17.4065,
         longitude: form.longitude ? Number(form.longitude) : 78.4772,
-        images: await uploadImages(form.images),
+        images: await Promise.all(form.images.map(uri => uploadCache.current.get(uri) || uploadImage(uri))),
         is_featured: form.isFeatured,
         is_sold: false,
       });
@@ -275,7 +285,7 @@ export default function CreatePropertyScreen() {
       console.error("Submit error:", e);
       showNotification({
         title: "Error",
-        body: "Could not create property. Check your connection.",
+        body: e instanceof Error ? e.message : "Could not create property. Check your connection.",
         type: "error",
       });
       setSubmitting(false);
@@ -285,11 +295,19 @@ export default function CreatePropertyScreen() {
     }
 
     setForm(INITIAL_FORM);
+    
     showNotification({
       title: "Listed Successfully",
       body: "Your property is now live on Kribb.",
       type: "success",
     });
+
+    // Send an OS-level push notification too
+    sendLocalNotification(
+      "Property Listed! 🏡",
+      `Your property '${form.title.trim()}' is now live on Kribb.`
+    );
+
     router.replace("/(root)/(tabs)/home");
   };
 

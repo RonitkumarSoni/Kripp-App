@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { signInGoogle } from '../lib/googleSignIn';
 import { Link } from 'expo-router';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { requestPasswordReset } from '../lib/passwordReset';
 import { auth } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { usePasswordResetCooldown } from '../hooks/usePasswordResetCooldown';
@@ -62,7 +63,7 @@ export default function FirebaseAuthScreen({ signup = false }: { signup?: boolea
   <TouchableOpacity disabled={busy} accessibilityRole="button" onPress={() => run(async () => { const result = await signInGoogle(); if (result) await refresh(); })} className="border border-gray-300 rounded-xl p-4 items-center flex-row justify-center" style={{ opacity: busy ? 0.6 : 1 }}>
    <Text style={{ color: '#4285F4', fontWeight: '700', fontSize: 20, marginRight: 12 }}>G</Text><Text className="text-gray-900 font-semibold">Continue with Google</Text>
   </TouchableOpacity>
-  {!signup && <TouchableOpacity disabled={busy || secondsLeft > 0} onPress={() => run(async () => { const recipient = normalizeEmail(email); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) throw new Error('Enter a valid email address first.'); await sendPasswordResetEmail(auth, recipient); startCooldown(); setMessage('If an account exists, check your email for password reset instructions.'); })} className="p-4 items-center"><Text className="text-blue-600">{secondsLeft > 0 ? `Try again in ${secondsLeft}s` : 'Forgot password?'}</Text></TouchableOpacity>}
+  {!signup && <TouchableOpacity disabled={busy || secondsLeft > 0} onPress={() => run(async () => { const recipient = normalizeEmail(email); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) throw new Error('Enter a valid email address first.'); await requestPasswordReset(recipient); startCooldown(); setMessage('If an account exists, check your email for password reset instructions.'); })} className="p-4 items-center"><Text className="text-blue-600">{secondsLeft > 0 ? `Try again in ${secondsLeft}s` : 'Forgot password?'}</Text></TouchableOpacity>}
   <View className="mt-4 pb-12 items-center">
    <Link href={signup ? '/(auth)/sign-in' : '/(auth)/sign-up'} style={{ color: '#2563EB', fontSize: 16, fontWeight: '600', textDecorationLine: 'underline' }}>
     {signup ? 'Already registered? Sign in' : 'New here? Create an account'}

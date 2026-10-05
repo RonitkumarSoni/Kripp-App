@@ -180,7 +180,7 @@ export default function ProfileScreen() {
         <MenuItem
           icon="heart-outline"
           label="Saved Properties"
-          onPress={() => router.push("/(root)/(tabs)/saved")}
+          onPress={() => router.push("/(root)/saved-properties?fromProfile=true")}
           theme={theme}
         />
         <MenuItem
@@ -192,7 +192,7 @@ export default function ProfileScreen() {
         <MenuItem
           icon="settings-outline"
           label="Settings"
-          onPress={() => router.push("/(root)/(tabs)/setting")}
+          onPress={() => router.push("/(root)/setting")}
           theme={theme}
         />
         <MenuItem

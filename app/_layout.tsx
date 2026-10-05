@@ -9,7 +9,14 @@ import "../global.css";
 // DOMException polyfill is handled in index.js
 
 import { NotificationProvider } from "../context/NotificationContext";
-import { ThemeProvider } from "../context/ThemeContext";
+import { ThemeProvider, useTheme } from "../context/ThemeContext";
+
+// StatusBar that reads theme from context — must be rendered inside ThemeProvider
+function ThemedStatusBar() {
+  const { theme } = useTheme();
+  // @ts-ignore
+  return <StatusBar style={theme.statusBar} backgroundColor={theme.bg} />;
+}
 
 // Branded loading screen — shown while Firebase is initializing
 function AppLoadingScreen() {
@@ -79,7 +86,7 @@ function InitialLayout() {
   return (
     <ThemeProvider>
       <NotificationProvider>
-        <StatusBar style="auto" />
+        <ThemedStatusBar />
         <Slot />
       </NotificationProvider>
     </ThemeProvider>
