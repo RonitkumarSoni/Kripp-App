@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as database from "../lib/database";
 import { useInAppNotification } from "../context/NotificationContext";
 import { MESSAGES } from "../constants/messages";
+import { auth } from "../lib/firebase";
 
 const LOCAL_SAVED_KEY = "kribb_local_saved_properties";
 
@@ -28,13 +29,16 @@ async function setLocalSavedIds(ids: string[]): Promise<void> {
 }
 
 export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
+  const userId = user?.id;
   const { showNotification } = useInAppNotification();
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
   useEffect(() => {
+    setIsSaved(false);
     if (!propertyId) return;
+    if (!isLocalProperty(propertyId) && (!isLoaded || !userId || auth.currentUser?.uid !== userId)) return;
     let isMounted = true;
 
     const checkSaved = async () => {
@@ -43,14 +47,14 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
           // Check AsyncStorage for seeded properties
           const ids = await getLocalSavedIds();
           if (isMounted) setIsSaved(ids.includes(propertyId));
-        } else if (user) {
+        } else if (userId && auth.currentUser?.uid === userId) {
           // Check Firestore for real DB properties
           const { data, error } = await database.isPropertySaved(propertyId);
           if (error) throw error;
-          if (isMounted) setIsSaved(!!data);
+          if (isMounted && auth.currentUser?.uid === userId) setIsSaved(!!data);
         }
       } catch (err) {
-        console.error("Error checking saved state:", err);
+        if (isMounted && auth.currentUser?.uid === userId) console.error("Error checking saved state:", err);
       }
     };
 
@@ -58,10 +62,14 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
     return () => {
       isMounted = false;
     };
-  }, [user, propertyId]);
+  }, [userId, isLoaded, propertyId]);
 
   const toggleSave = async () => {
     if (!propertyId || saveLoading) return;
+    if (!isLocalProperty(propertyId) && (!isLoaded || !userId || auth.currentUser?.uid !== userId)) {
+      showNotification({ title: "Sign in required", body: "Sign in to save this property.", type: "info" });
+      return;
+    }
     setSaveLoading(true);
     const prevSaved = isSaved;
     setIsSaved(!prevSaved);
@@ -71,11 +79,11 @@ export function useSavedProperty(propertyId: string, onUnsave?: () => void) {
       try {
         const Haptics = require("expo-haptics");
         if (prevSaved) {
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
         } else {
-          await Haptics.notificationAsync(
+          void Haptics.notificationAsync(
             Haptics.NotificationFeedbackType.Success
-          );
+          ).catch(() => {});
         }
       } catch {}
 

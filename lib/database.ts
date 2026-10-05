@@ -53,7 +53,11 @@ export function syncUserProfile(value: { email: string; first_name: string; last
  });
 }
 export function isPropertySaved(id: string) {
- return result(async () => (await getDoc(doc(saved(uid()), id))).exists());
+ return result(async () => {
+  const currentId = auth.currentUser?.uid;
+  if (!currentId) return false;
+  return (await getDoc(doc(saved(currentId), id))).exists();
+ });
 }
 export function saveProperty(id: string, save: boolean) {
  return result(async () => {
